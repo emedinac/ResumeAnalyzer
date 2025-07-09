@@ -97,7 +97,6 @@ if __name__ == "__main__":
             dataset.compute_embeddings(split)
             dataset.build_vectorstore(vectorstore_type="faiss")
             dataset.save_indexes(split)
-            dataset.compute_embeddings(split)
             dataset.build_vectorstore(vectorstore_type="chroma")
             dataset.save_indexes(split)
             print("Embeddings computed and saved successfully.")
