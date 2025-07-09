@@ -20,7 +20,7 @@ class ResumeLoader:
         self.embedding_model = HuggingFaceEmbeddings(
             model_name="sentence-transformers/all-mpnet-base-v2",
             encode_kwargs={"normalize_embeddings": True},
-            multi_process=True,
+            # multi_process=True,
         )
         self.vector_db = None
         self.embeddings = {}
@@ -41,7 +41,7 @@ class ResumeLoader:
             if "label" == field:
                 continue
             samples = self.dataset[split][field]
-            chunks = self.chunker.create_documents(samples)
+            chunks = self.chunker.create_documents(samples,)
             print(f"Total chunks: {len(chunks)}")
             self.chunks[field] = chunks
 
