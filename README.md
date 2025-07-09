@@ -18,6 +18,7 @@ Important note for FAISS (GPU): [issue with numpy](https://github.com/facebookre
 ```bash
 python3.10 -m venv prj2
 source prj2/bin/activate
+cd ResumeAnalyzer
 pip install --upgrade pip
 pip install uv
 uv init . 
