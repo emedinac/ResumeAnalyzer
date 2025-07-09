@@ -14,8 +14,9 @@ from pathlib import Path
 class ResumeLoader:
     """Loader class to load the resume-job-description-fit dataset."""
 
-    def __init__(self, path_to_dataset="cnamuangtoun/resume-job-description-fit"):
+    def __init__(self, path_to_dataset="cnamuangtoun/resume-job-description-fit", save_path="embeddings"):
         # Another one interesting: d4rk3r/resumes-raw-pdf
+        self.save_path = save_path  # For default Chroma folder
         self.dataset = load_dataset(path_to_dataset)
         self.embedding_model = HuggingFaceEmbeddings(
             model_name="sentence-transformers/all-mpnet-base-v2",
@@ -56,6 +57,7 @@ class ResumeLoader:
             elif vectorstore_type == "chroma":
                 self.vector_db = Chroma.from_documents(self.chunks[field],
                                                        self.embedding_model,
+                                                       persist_directory=self.save_path,  # horrible from Chroma
                                                        )
             else:
                 raise ValueError(
@@ -82,7 +84,7 @@ class ResumeLoader:
         elif self.vectorstore_type == "chroma":
             save_path = Path(save_path).joinpath(self.vectorstore_type, split)
             save_path.mkdir(parents=True, exist_ok=True)
-            self.vector_db.persist(persist_directory=save_path)
+            # self.vector_db.persist(persist_directory=save_path) # not used in Chroma
 
 
 if __name__ == "__main__":
