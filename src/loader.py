@@ -20,6 +20,7 @@ class ResumeLoader:
         self.embedding_model = HuggingFaceEmbeddings(
             model_name="sentence-transformers/all-mpnet-base-v2",
             encode_kwargs={"normalize_embeddings": True},
+            multi_process=True,
         )
         self.vector_db = None
         self.embeddings = {}
@@ -32,7 +33,7 @@ class ResumeLoader:
             sentence_split_regex=r"(?<=[.?!])\s+",  # .?!
         )
 
-    def compute_embeddings(self, split="train", batch_size=1024, num_workers=16):
+    def compute_embeddings(self, split="train"):
         # Compute embeddings without chunks
         self.chunks = {}
         fields = list(self.dataset[split].features.keys())
@@ -40,15 +41,7 @@ class ResumeLoader:
             if "label" == field:
                 continue
             samples = self.dataset[split][field]
-
-            with ThreadPoolExecutor(max_workers=num_workers) as executor:
-                futures = [
-                    executor.submit(self.chunker.create_documents,
-                                    samples[i:i + batch_size])
-                    for i in range(0, len(samples), batch_size)
-                ]
-                chunks = [future.result() for future in futures]
-            # chunks = self.chunker.create_documents(samples)
+            chunks = self.chunker.create_documents(samples)
             print(f"Total chunks: {len(chunks)}")
             self.chunks[field] = chunks
 
