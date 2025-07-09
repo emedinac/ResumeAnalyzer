@@ -2,7 +2,7 @@
 
 Resume Analyser is a tool that uses Retrieval-Augmented Generation (RAG) to deeply understand candidate profiles. Instead of just matching keywords, it connects skills, experience, and qualifications to provide clear, explainable insights for hiring decisions. Perfect for recruiters, HR tech platforms, and anyone looking to evaluate talent more effectively.
 
-Tech stacks and concepts applied:
+## Key Features
 
 Langchain: used to wraps Huggingface models and has everything inside it :D. So I can easily use with prompts.
 
@@ -13,6 +13,7 @@ Retrieval Augmented Generation (RAG):
 Important note for FAISS (GPU): [issue with numpy](https://github.com/facebookresearch/faiss/issues/3526)
 
 Specifically, Added:
+
 - [X] Database loader
 - [X] Indexing via Chroma & FAISS vector databases.
 - [ ] Load LLMs pipeline
@@ -32,4 +33,3 @@ uv sync --active
 ```
 
 ## Run
-
