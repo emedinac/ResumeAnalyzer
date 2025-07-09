@@ -1,5 +1,6 @@
 from datasets import load_dataset
 from langchain_community.vectorstores import FAISS
+from langchain_community.vectorstores import Chroma
 from langchain_huggingface import HuggingFaceEmbeddings
 # looks like the best in the 0.3v
 # https://medium.com/@anixlynch/7-chunking-strategies-for-langchain-b50dac194813
@@ -30,39 +31,58 @@ class ResumeLoader:
             sentence_split_regex=r"(?<=[.?!])\s+",  # .?!
         )
 
-    def compute_embeddings_faiss(self, split="train", batch_size=1024):
+    def compute_embeddings(self, split="train", batch_size=1024, vectorstore_type="faiss"):
         # Compute embeddings without chunks
         fields = list(self.dataset[split].features.keys())
         for field in fields:
             if "label" == field:
                 continue
-            all_chunks = []
+            self.chunks = []
             batches = (len(self.dataset[split]) // batch_size)+1
             for i in tqdm(range(batches)):
                 samples = self.dataset[split][field][i *
                                                      batch_size:
                                                      (i+1) *
                                                      batch_size]
-                chunks = self.chunker.create_documents(samples)
-                all_chunks.extend(chunks)
-            print(f"Total chunks: {len(all_chunks)}")
-            self.embeddings[field] = FAISS.from_documents(all_chunks,
-                                                          self.embedding_model)
+                batch_chunks = self.chunker.create_documents(samples)
+                self.chunks.extend(batch_chunks)
+            print(f"Total chunks: {len(self.chunks)}")
 
-    def load_embeddings_faiss(self, split="train", loade_path="embeddings"):
-        load_path = Path(loade_path).joinpath(split)
-        if not load_path.exists():
-            raise FileNotFoundError(f"Path {str(load_path)} does not exist.")
+            self.vectorstore_type = vectorstore_type.lower()
+            if self.vectorstore_type == "faiss":
+                self.vector_db = FAISS.from_documents(self.chunks,
+                                                      self.embedding_model
+                                                      )
+            elif self.vectorstore_type == "chroma":
+                self.vector_db = Chroma.from_documents(self.chunks,
+                                                       self.embedding_model
+                                                       )
+            else:
+                raise ValueError(
+                    f"Unknown vectorstore: {self.vectorstore_type}")
+
+    def load_embeddings_faiss(self, loade_path="embeddings"):
+        load_path = Path(loade_path)
         self.vector_db = FAISS.load_local(str(load_path),
                                           self.embedding_model,
                                           allow_dangerous_deserialization=True
                                           )
         return self.vector_db
 
-    def save_embeddings_faiss(self, split="train", save_path="embeddings"):
-        save_path = Path(save_path).joinpath(split)
-        save_path.mkdir(parents=True, exist_ok=True)
-        self.embeddings.save_local(f"{str(save_path)}")
+    def load_vectors(self, loade_path="embeddings"):
+        return Chroma(persist_directory=loade_path,
+                      embedding_function=self.embedding_model,
+                      )
+
+    def save_index(self, split="train", save_path="embeddings"):
+        if self.vectorstore_type == "faiss":
+            save_path = Path(save_path).joinpath(self.vectorstore_type, split)
+            save_path.mkdir(parents=True, exist_ok=True)
+            self.vector_db.save_local(f"{str(save_path)}")
+        elif self.vectorstore_type == "chroma":
+            save_path = Path(save_path).joinpath(self.vectorstore_type, split)
+            save_path.mkdir(parents=True, exist_ok=True)
+            self.vector_db.persist(persist_directory=save_path)
 
 
 if __name__ == "__main__":
@@ -74,8 +94,10 @@ if __name__ == "__main__":
             dataset.load_embeddings_faiss(split)
             print("Embeddings loaded successfully.")
         else:
-            dataset.compute_embeddings_faiss(split)
-            dataset.save_embeddings_faiss(split)
+            dataset.compute_embeddings(split, "faiss")
+            dataset.save_index(split)
+            dataset.compute_embeddings(split, "chroma")
+            dataset.save_index(split)
             print("Embeddings computed and saved successfully.")
 
     print("Embeddings computed and saved successfully.")
