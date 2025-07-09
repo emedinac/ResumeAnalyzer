@@ -1,0 +1,15 @@
+[project]
+name = "resumeanalyzer"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "datasets>=4.0.0",
+    "faiss-cpu>=1.11.0",
+    "langchain>=0.3.26",
+    "langchain-community>=0.3.27",
+    "langchain-experimental>=0.3.4",
+    "langchain-huggingface>=0.3.0",
+    "sentence-transformers>=5.0.0",
+]
