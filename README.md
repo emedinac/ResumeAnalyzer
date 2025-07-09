@@ -12,6 +12,12 @@ Retrieval Augmented Generation (RAG):
 
 Important note for FAISS (GPU): [issue with numpy](https://github.com/facebookresearch/faiss/issues/3526)
 
+Specifically, Added:
+- [X] Database loader
+- [X] Indexing via Chroma & FAISS vector databases.
+- [ ] Load LLMs pipeline
+- [ ] RAG implementation
+- [ ] 
 
 ## Install
 
@@ -24,3 +30,6 @@ pip install uv
 uv init . 
 uv sync --active
 ```
+
+## Run
+
