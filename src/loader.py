@@ -14,11 +14,11 @@ from pathlib import Path
 class BaseResumeLoader:
     """Base Loader class to load the resume-job-description-fit dataset"""
 
-    def __init__(self, path_to_dataset="cnamuangtoun/resume-job-description-fit"):
+    def __init__(self, path_to_dataset="cnamuangtoun/resume-job-description-fit", model_name="sentence-transformers/all-mpnet-base-v2"):
         # Another one interesting: d4rk3r/resumes-raw-pdf
         self.dataset = load_dataset(path_to_dataset)
         self.embedding_model = HuggingFaceEmbeddings(
-            model_name="sentence-transformers/all-mpnet-base-v2",
+            model_name=model_name,
             encode_kwargs={"normalize_embeddings": True},
             # multi_process=True,
         )
@@ -47,8 +47,8 @@ class BaseResumeLoader:
 
 
 class ResumeLoaderFAISS(BaseResumeLoader):
-    def __init__(self, path_to_dataset="cnamuangtoun/resume-job-description-fit"):
-        super().__init__(path_to_dataset)
+    def __init__(self, path_to_dataset="cnamuangtoun/resume-job-description-fit", model_name="sentence-transformers/all-mpnet-base-v2"):
+        super().__init__(path_to_dataset, model_name)
         self.vector_db = {}
 
     def build_vectorstore(self):
@@ -73,8 +73,8 @@ class ResumeLoaderFAISS(BaseResumeLoader):
 
 
 class ResumeLoaderChroma(BaseResumeLoader):
-    def __init__(self, path_to_dataset="cnamuangtoun/resume-job-description-fit"):
-        super().__init__(path_to_dataset)
+    def __init__(self, path_to_dataset="cnamuangtoun/resume-job-description-fit", model_name="sentence-transformers/all-mpnet-base-v2"):
+        super().__init__(path_to_dataset, model_name)
         self.vector_db = None
 
     def build_vectorstore(self, save_path):
@@ -102,8 +102,12 @@ class ResumeLoaderChroma(BaseResumeLoader):
 if __name__ == "__main__":
     # Example usage
     field = "resume_text"
-    dataset_faiss = ResumeLoaderFAISS()
-    dataset_chroma = ResumeLoaderChroma()
+    dataset_faiss = ResumeLoaderFAISS(
+        model_name="sentence-transformers/all-MiniLM-L6-v2"
+    )
+    dataset_chroma = ResumeLoaderChroma(
+        model_name="sentence-transformers/all-MiniLM-L6-v2"
+    )
     for split in ["train", "test"]:
         print(f"Processing split: {split}")
         if Path(f"embeddings/chroma/{split}/{field}").exists():
