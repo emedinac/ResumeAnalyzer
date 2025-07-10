@@ -16,9 +16,13 @@ class BaseResumeLoader:
 
     def __init__(self, path_to_dataset="cnamuangtoun/resume-job-description-fit", model_name="sentence-transformers/all-mpnet-base-v2"):
         # Another one interesting: d4rk3r/resumes-raw-pdf
-        self.dataset = load_dataset(path_to_dataset)
+        self.path_to_dataset = path_to_dataset
+        self.model_name = model_name
+
+    def setup(self):
+        self.dataset = load_dataset(self.path_to_dataset)
         self.embedding_model = HuggingFaceEmbeddings(
-            model_name=model_name,
+            model_name=self.model_name,
             encode_kwargs={"normalize_embeddings": True},
             # multi_process=True,
         )
@@ -116,6 +120,7 @@ if __name__ == "__main__":
             print("Embeddings loaded successfully.")
             break
         else:
+            dataset_faiss.setup()
             dataset_faiss.compute_embeddings(split)
             dataset_faiss.build_vectorstore()
             dataset_faiss.save_indexes(f"embeddings/faiss/{split}")
