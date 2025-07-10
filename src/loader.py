@@ -100,7 +100,7 @@ class ResumeLoaderChroma(BaseResumeLoader):
 
 
 if __name__ == "__main__":
-    # Example usage
+    # TEST: Example usage, in Practice, it should be in a separate script
     field = "resume_text"
     dataset_faiss = ResumeLoaderFAISS(
         model_name="sentence-transformers/all-MiniLM-L6-v2"
