@@ -40,7 +40,7 @@ class BaseResumeLoader:
         for field in self.fields:
             if "label" == field:
                 continue
-            samples = self.dataset[split][field]  # [:10] # for tests
+            samples = self.dataset[split][field]  # [:2]  # for tests
             chunks = self.chunker.create_documents(samples,)
             print(f"Total chunks: {len(chunks)}")
             self.chunks[field] = chunks
@@ -79,7 +79,7 @@ class ResumeLoaderChroma(BaseResumeLoader):
 
     def build_vectorstore(self, save_path):
         for field in self.chunks.keys():
-            db_path = Path(save_path).joinpath("chroma", field)
+            db_path = Path(save_path).joinpath(field)
             db_path.mkdir(parents=True, exist_ok=True)
             self.vector_db = Chroma.from_documents(self.chunks[field],
                                                    self.embedding_model,
@@ -116,7 +116,7 @@ if __name__ == "__main__":
             dataset_faiss.build_vectorstore()
             dataset_faiss.save_indexes(f"embeddings/faiss/{split}")
             dataset_chroma.chunks = dataset_faiss.chunks
-            dataset_chroma.build_vectorstore("embeddings")
+            dataset_chroma.build_vectorstore(f"embeddings/chroma/{split}")
             print("Embeddings computed and saved successfully.")
 
     print("Computation finished successfully.")
