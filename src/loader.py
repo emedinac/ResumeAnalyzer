@@ -11,21 +11,19 @@ from tqdm import tqdm
 from pathlib import Path
 
 
-class ResumeLoader:
-    """Loader class to load the resume-job-description-fit dataset."""
+class BaseResumeLoader:
+    """Base Loader class to load the resume-job-description-fit dataset"""
 
-    def __init__(self, path_to_dataset="cnamuangtoun/resume-job-description-fit", save_path="embeddings"):
+    def __init__(self, path_to_dataset="cnamuangtoun/resume-job-description-fit"):
         # Another one interesting: d4rk3r/resumes-raw-pdf
-        self.save_path = save_path  # For default Chroma folder
         self.dataset = load_dataset(path_to_dataset)
         self.embedding_model = HuggingFaceEmbeddings(
             model_name="sentence-transformers/all-mpnet-base-v2",
             encode_kwargs={"normalize_embeddings": True},
             # multi_process=True,
         )
-        self.vector_db = None
-        self.embeddings = {}
-
+        self.split = None
+        self.fields = None
         self.chunker = SemanticChunker(
             embeddings=self.embedding_model,
             buffer_size=1,
@@ -36,71 +34,89 @@ class ResumeLoader:
 
     def compute_embeddings(self, split="train"):
         # Compute embeddings without chunks
+        self.split = split
         self.chunks = {}
-        fields = list(self.dataset[split].features.keys())
-        for field in fields:
+        self.fields = list(self.dataset[split].features.keys())
+        for field in self.fields:
             if "label" == field:
                 continue
-            samples = self.dataset[split][field]
+            samples = self.dataset[split][field]  # [:10] # for tests
             chunks = self.chunker.create_documents(samples,)
             print(f"Total chunks: {len(chunks)}")
             self.chunks[field] = chunks
 
-    def build_vectorstore(self, vectorstore_type="faiss"):
-        self.vectorstore_type = vectorstore_type
-        fields = list(self.chunks.keys())
-        for field in fields:
-            if vectorstore_type == "faiss":
-                self.vector_db = FAISS.from_documents(self.chunks[field],
-                                                      self.embedding_model,
-                                                      )
-            elif vectorstore_type == "chroma":
-                self.vector_db = Chroma.from_documents(self.chunks[field],
-                                                       self.embedding_model,
-                                                       persist_directory=self.save_path,  # horrible from Chroma
-                                                       )
-            else:
-                raise ValueError(
-                    f"Unknown vectorstore: {vectorstore_type}")
 
-    def load_indexes(self, vectorstore_type="faiss", loade_path="embeddings"):
-        load_path = Path(loade_path)
-        if vectorstore_type == "faiss":
-            self.vector_db = FAISS.load_local(str(load_path),
-                                              self.embedding_model,
-                                              allow_dangerous_deserialization=True
-                                              )
-        elif vectorstore_type == "chroma":
-            self.vector_db = Chroma(persist_directory=loade_path,
-                                    embedding_function=self.embedding_model,
-                                    )
+class ResumeLoaderFAISS(BaseResumeLoader):
+    def __init__(self, path_to_dataset="cnamuangtoun/resume-job-description-fit"):
+        super().__init__(path_to_dataset)
+        self.vector_db = {}
+
+    def build_vectorstore(self):
+        for field in self.chunks.keys():
+            self.vector_db[field] = FAISS.from_documents(self.chunks[field],
+                                                         self.embedding_model,
+                                                         )
+
+    def load_indexes(self, loade_path="embeddings"):
+        self.vector_db = FAISS.load_local(loade_path,
+                                          self.embedding_model,
+                                          allow_dangerous_deserialization=True
+                                          )
         return self.vector_db
 
-    def save_indexes(self, split="train", save_path="embeddings"):
-        if self.vectorstore_type == "faiss":
-            save_path = Path(save_path).joinpath(self.vectorstore_type, split)
-            save_path.mkdir(parents=True, exist_ok=True)
-            self.vector_db.save_local(f"{str(save_path)}")
-        elif self.vectorstore_type == "chroma":
-            save_path = Path(save_path).joinpath(self.vectorstore_type, split)
-            save_path.mkdir(parents=True, exist_ok=True)
-            # self.vector_db.persist(persist_directory=save_path) # not used in Chroma
+    def save_indexes(self, save_path="embeddings"):
+        save_path = Path(save_path)
+        save_path.mkdir(parents=True, exist_ok=True)
+        for field in self.chunks.keys():
+            db_path = str(save_path.joinpath(field))
+            self.vector_db[field].save_local(f"{db_path}")
+
+
+class ResumeLoaderChroma(BaseResumeLoader):
+    def __init__(self, path_to_dataset="cnamuangtoun/resume-job-description-fit"):
+        super().__init__(path_to_dataset)
+        self.vector_db = None
+
+    def build_vectorstore(self, save_path):
+        for field in self.chunks.keys():
+            db_path = Path(save_path).joinpath("chroma", field)
+            db_path.mkdir(parents=True, exist_ok=True)
+            self.vector_db = Chroma.from_documents(self.chunks[field],
+                                                   self.embedding_model,
+                                                   # horrible from Chroma
+                                                   persist_directory=str(
+                                                       db_path),
+                                                   )
+
+    def load_indexes(self, loade_path="embeddings"):
+        self.vector_db = Chroma(persist_directory=loade_path,
+                                embedding_function=self.embedding_model,
+                                )
+        return self.vector_db
+
+    def save_indexes(self):
+        NotImplemented  # Chroma saves automatically to the persist_directory
+        pass
 
 
 if __name__ == "__main__":
     # Example usage
-    dataset = ResumeLoader()
+    field = "resume_text"
+    dataset_faiss = ResumeLoaderFAISS()
+    dataset_chroma = ResumeLoaderChroma()
     for split in ["train", "test"]:
         print(f"Processing split: {split}")
-        if Path("embeddings/{split}").exists():
-            dataset.load_indexes(split)
+        if Path(f"embeddings/chroma/{split}/{field}").exists():
+            dataset_chroma.load_indexes(f"embeddings/chroma/{split}/{field}")
+            dataset_faiss.load_indexes(f"embeddings/faiss/{split}/{field}")
             print("Embeddings loaded successfully.")
+            break
         else:
-            dataset.compute_embeddings(split)
-            dataset.build_vectorstore(vectorstore_type="faiss")
-            dataset.save_indexes(split)
-            dataset.build_vectorstore(vectorstore_type="chroma")
-            dataset.save_indexes(split)
+            dataset_faiss.compute_embeddings(split)
+            dataset_faiss.build_vectorstore()
+            dataset_faiss.save_indexes(f"embeddings/faiss/{split}")
+            dataset_chroma.chunks = dataset_faiss.chunks
+            dataset_chroma.build_vectorstore("embeddings")
             print("Embeddings computed and saved successfully.")
 
-    print("Embeddings computed and saved successfully.")
+    print("Computation finished successfully.")
