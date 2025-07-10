@@ -38,7 +38,7 @@ if __name__ == "__main__":
     jobid = jobs_ids[np.random.randint(len(jobs_ids))]
     job_description = job_db.vectors.get(ids=[jobid])
     score = rags.evaluate_cv_with_offer(rag,
-                                        job_description=job_description,
+                                        job_description=job_description["documents"][0],
                                         prompt_template=rags.prompts.template1
                                         )
     print(score)
