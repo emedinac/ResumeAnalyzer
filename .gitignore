@@ -1,5 +1,6 @@
 # specific from this project
 embeddings/
+.vscode/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

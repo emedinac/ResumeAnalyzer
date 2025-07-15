@@ -5,7 +5,9 @@ from langchain_huggingface import HuggingFaceEmbeddings
 # looks like the best in the 0.3v
 # https://medium.com/@anixlynch/7-chunking-strategies-for-langchain-b50dac194813
 from langchain_experimental.text_splitter import SemanticChunker
+from langchain.text_splitter import RecursiveCharacterTextSplitter
 from pathlib import Path
+from langchain.schema import Document
 
 
 class BaseResumeLoader:
@@ -25,6 +27,12 @@ class BaseResumeLoader:
         self.dataset = load_dataset(self.path_to_dataset)
         self.split = None
         self.fields = None
+        self.text_splitter = RecursiveCharacterTextSplitter(
+            chunk_size=1000,
+            chunk_overlap=200,
+            length_function=len,
+            separators=["\n\n", "\n", ". ", " ", ""]
+        )
         self.chunker = SemanticChunker(
             embeddings=self.embedding_model,
             buffer_size=1,
@@ -36,15 +44,28 @@ class BaseResumeLoader:
     def compute_embeddings(self, split="train"):
         # Compute embeddings without chunks
         self.split = split
-        self.chunks = {}
+        self.db_chunks = {}
         self.fields = list(self.dataset[split].features.keys())
         for field in self.fields:
             if "label" == field:
                 continue
             samples = self.dataset[split][field]  # [:2]  # for tests
-            chunks = self.chunker.create_documents(samples,)
-            print(f"Total chunks: {len(chunks)}")
-            self.chunks[field] = chunks
+            # chunks = self.chunker.create_documents(samples,)
+            # This implementation is more accurate and got better performance:
+            docs: list[Document] = []
+            for resume_idx, sample in enumerate(samples):
+                # Ensures chunks stay under size limits and preserve natural language flow
+                prelim_docs = self.chunker.split_text(sample)
+                # Merges or splits based on actual “meaning” in embeddings
+                chunks = self.chunker.create_documents(prelim_docs)
+                for idx, chunk in enumerate(chunks):
+                    chunk.metadata = {"resume_id":   str(resume_idx),
+                                      "source":      f"{field}/{idx}",
+                                      "chunk_index": idx,
+                                      }
+                    docs.append(chunk)
+            print(f"Total chunks: {len(docs)}")
+            self.db_chunks[field] = docs
 
 
 class ResumeLoaderFAISS(BaseResumeLoader):
@@ -53,8 +74,8 @@ class ResumeLoaderFAISS(BaseResumeLoader):
         self.vectors = {}
 
     def build_vectorstore(self):
-        for field in self.chunks.keys():
-            self.vectors[field] = FAISS.from_documents(self.chunks[field],
+        for field in self.db_chunks.keys():
+            self.vectors[field] = FAISS.from_documents(self.db_chunks[field],
                                                        self.embedding_model,
                                                        )
 
@@ -68,7 +89,7 @@ class ResumeLoaderFAISS(BaseResumeLoader):
     def save_indexes(self, save_path="embeddings"):
         save_path = Path(save_path)
         save_path.mkdir(parents=True, exist_ok=True)
-        for field in self.chunks.keys():
+        for field in self.db_chunks.keys():
             db_path = str(save_path.joinpath(field))
             self.vectors[field].save_local(f"{db_path}")
 
@@ -80,10 +101,10 @@ class ResumeLoaderChroma(BaseResumeLoader):
         self.vectors = None
 
     def build_vectorstore(self, save_path):
-        for field in self.chunks.keys():
+        for field in self.db_chunks.keys():
             db_path = Path(save_path).joinpath(field)
             db_path.mkdir(parents=True, exist_ok=True)
-            self.vectors = Chroma.from_documents(self.chunks[field],
+            self.vectors = Chroma.from_documents(self.db_chunks[field],
                                                  self.embedding_model,
                                                  # horrible from Chroma
                                                  persist_directory=str(
@@ -122,7 +143,7 @@ if __name__ == "__main__":
             dataset_faiss.compute_embeddings(split)
             dataset_faiss.build_vectorstore()
             dataset_faiss.save_indexes(f"embeddings/faiss/{split}")
-            dataset_chroma.chunks = dataset_faiss.chunks
+            dataset_chroma.db_chunks = dataset_faiss.db_chunks
             dataset_chroma.build_vectorstore(f"embeddings/chroma/{split}")
             print("Embeddings computed and saved successfully.")
 
