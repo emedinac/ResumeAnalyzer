@@ -8,6 +8,7 @@ from langchain_experimental.text_splitter import SemanticChunker
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from pathlib import Path
 from langchain.schema import Document
+from tqdm import tqdm
 
 
 class BaseResumeLoader:
@@ -53,7 +54,7 @@ class BaseResumeLoader:
             # chunks = self.chunker.create_documents(samples,)
             # This implementation is more accurate and got better performance:
             docs: list[Document] = []
-            for resume_idx, sample in enumerate(samples):
+            for resume_idx, sample in enumerate(tqdm(samples, desc="Chunking resumes")):
                 # Ensures chunks stay under size limits and preserve natural language flow
                 prelim_docs = self.chunker.split_text(sample)
                 # Merges or splits based on actual “meaning” in embeddings
