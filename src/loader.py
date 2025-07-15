@@ -9,20 +9,55 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from pathlib import Path
 from langchain.schema import Document
 from tqdm import tqdm
+import re  # used to add spaces for links, dates and numbers
+
+
+import re
+
+
+def normalize_resume_text(text):
+    # adding some heuristics with Regex. for some manual inspections.
+    # https://regex101.com/
+    # 1. capitalized word following lowercase or punctuation
+    text = re.sub(r'(?<=[a-z.,])(?=(?:[A-Z][a-z]{2,}|[A-Z]{3,}))', ' ', text)
+
+    # 3. Normalize phone numbers with spaced digits and dashes
+    text = re.sub(
+        r'(?<=\(\d{3}\))([\s\d-]{4,20})',
+        lambda m: re.sub(r'\s+', '', m.group()),
+        text
+    )
+
+    # 4. phone numbers and email addresses
+    text = re.sub(r'(?<=[a-zA-Z])(?=\d)', ' ', text)
+    text = re.sub(r'(?<=\d)(?=[a-zA-Z])', ' ', text)
+
+    # 5. dates like 01/2025
+    text = re.sub(
+        r'(?<=[0-9]{2}/[0-9]{4})(?=[A-Z])',
+        ' ',
+        text
+    )
+
+    return text
 
 
 class BaseResumeLoader:
     """Base Loader class to load the resume-job-description-fit dataset"""
 
-    def __init__(self, path_to_dataset="cnamuangtoun/resume-job-description-fit", model_name="sentence-transformers/all-mpnet-base-v2"):
+    def __init__(self, path_to_dataset="cnamuangtoun/resume-job-description-fit", batch_size=256, model_name="sentence-transformers/all-mpnet-base-v2"):
         # Another one interesting: d4rk3r/resumes-raw-pdf
         self.path_to_dataset = path_to_dataset
         self.model_name = model_name
+        self.batch_size = batch_size
 
     def setup(self):
         self.embedding_model = HuggingFaceEmbeddings(
             model_name=self.model_name,
-            encode_kwargs={"normalize_embeddings": True},
+            model_kwargs={'device': 'cuda'},
+            encode_kwargs={"normalize_embeddings": True,
+                           "convert_to_tensor": True,
+                           "batch_size": self.batch_size, },
             # multi_process=True,
         )
         self.dataset = load_dataset(self.path_to_dataset)
@@ -32,14 +67,14 @@ class BaseResumeLoader:
             chunk_size=1000,
             chunk_overlap=200,
             length_function=len,
-            separators=["\n\n", "\n", ". ", " ", ""]
+            separators=["\n\n", "\n", ".", " ", ""]
         )
         self.chunker = SemanticChunker(
             embeddings=self.embedding_model,
             buffer_size=1,
             breakpoint_threshold_type="percentile",
             breakpoint_threshold_amount=90,
-            sentence_split_regex=r"(?<=[.?!])\s+",  # .?!
+            sentence_split_regex=r"(?<=[.?!])\s*",  # .?!
         )
 
     def compute_embeddings(self, split="train"):
@@ -56,22 +91,30 @@ class BaseResumeLoader:
             docs: list[Document] = []
             for resume_idx, sample in enumerate(tqdm(samples, desc="Chunking resumes")):
                 # Ensures chunks stay under size limits and preserve natural language flow
-                prelim_docs = self.chunker.split_text(sample)
-                # Merges or splits based on actual “meaning” in embeddings
+                sample = normalize_resume_text(sample)
+                prelim_docs = self.text_splitter.split_text(sample)
+                prelim_metas = [{"resume_id": str(resume_idx),
+                                 "source": f"{field}/{resume_idx}",
+                                 "chunk_id": idx,
+                                 }
+                                for idx in range(len(prelim_docs))
+                                ]
                 chunks = self.chunker.create_documents(prelim_docs)
+                chunks = [chunk for chunk in chunks if chunk.page_content.strip(
+                ) and chunk.page_content.strip() != "."]
                 for idx, chunk in enumerate(chunks):
                     chunk.metadata = {"resume_id":   str(resume_idx),
-                                      "source":      f"{field}/{idx}",
+                                      "source":      f"{field}/{resume_idx}",
                                       "chunk_index": idx,
                                       }
-                    docs.append(chunk)
+                docs.extend(chunks)
             print(f"Total chunks: {len(docs)}")
             self.db_chunks[field] = docs
 
 
 class ResumeLoaderFAISS(BaseResumeLoader):
-    def __init__(self, path_to_dataset="cnamuangtoun/resume-job-description-fit", model_name="sentence-transformers/all-mpnet-base-v2"):
-        super().__init__(path_to_dataset, model_name)
+    def __init__(self, path_to_dataset="cnamuangtoun/resume-job-description-fit", batch_size=256, model_name="sentence-transformers/all-mpnet-base-v2"):
+        super().__init__(path_to_dataset, batch_size, model_name)
         self.vectors = {}
 
     def build_vectorstore(self):
@@ -96,8 +139,8 @@ class ResumeLoaderFAISS(BaseResumeLoader):
 
 
 class ResumeLoaderChroma(BaseResumeLoader):
-    def __init__(self, path_to_dataset="cnamuangtoun/resume-job-description-fit", model_name="sentence-transformers/all-mpnet-base-v2"):
-        super().__init__(path_to_dataset, model_name)
+    def __init__(self, path_to_dataset="cnamuangtoun/resume-job-description-fit", batch_size=256, model_name="sentence-transformers/all-mpnet-base-v2"):
+        super().__init__(path_to_dataset, batch_size, model_name)
         super().setup()
         self.vectors = None
 
@@ -124,28 +167,42 @@ class ResumeLoaderChroma(BaseResumeLoader):
 
 
 if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser(
+        prog='loader', description='Get and process the dataset')
+    parser.add_argument(
+        '--model', default="sentence-transformers/all-MiniLM-L6-v2")
+    parser.add_argument(
+        '--input_path', type=str, default="embeddings")
+    parser.add_argument(
+        '--output_path', type=str, default="embeddings")
+    parser.add_argument(
+        '--batch_size', type=int, default=256)
+    parser.add_argument(
+        '--split', type=str, default="train")
+    args = parser.parse_args()
+    # "sentence-transformers/all-MiniLM-L6-v2"
+    # "sentence-transformers/all-mpnet-base-v2"
+
     # TEST: Example usage, in Practice, it should be in a separate script
     field = "resume_text"
-    dataset_faiss = ResumeLoaderFAISS(
-        model_name="sentence-transformers/all-MiniLM-L6-v2"
-    )
-    dataset_chroma = ResumeLoaderChroma(
-        model_name="sentence-transformers/all-MiniLM-L6-v2"
-    )
-    for split in ["train", "test"]:
-        print(f"Processing split: {split}")
-        if Path(f"embeddings/chroma/{split}/{field}").exists():
-            dataset_chroma.load_indexes(f"embeddings/chroma/{split}/{field}")
-            dataset_faiss.load_indexes(f"embeddings/faiss/{split}/{field}")
-            print("Embeddings loaded successfully.")
-            break
-        else:
-            dataset_faiss.setup()
-            dataset_faiss.compute_embeddings(split)
-            dataset_faiss.build_vectorstore()
-            dataset_faiss.save_indexes(f"embeddings/faiss/{split}")
-            dataset_chroma.db_chunks = dataset_faiss.db_chunks
-            dataset_chroma.build_vectorstore(f"embeddings/chroma/{split}")
-            print("Embeddings computed and saved successfully.")
+    dataset_faiss = ResumeLoaderFAISS(batch_size=args.batch_size,
+                                      model_name=args.model)
+    dataset_chroma = ResumeLoaderChroma(batch_size=args.batch_size,
+                                        model_name=args.model)
+    split = args.split
+    print(f"Processing split: {split}")
+    if Path(f"embeddings/chroma/{split}/{field}").exists():
+        dataset_chroma.load_indexes(f"{args.input_path}/chroma/{split}/{field}")
+        dataset_faiss.load_indexes(f"{args.input_path}/faiss/{split}/{field}")
+        print("Embeddings loaded successfully.")
+    else:
+        dataset_faiss.setup()
+        dataset_faiss.compute_embeddings(split)
+        dataset_faiss.build_vectorstore()
+        dataset_faiss.save_indexes(f"{args.output_path}/faiss/{split}")
+        dataset_chroma.db_chunks = dataset_faiss.db_chunks
+        dataset_chroma.build_vectorstore(f"{args.output_path}/chroma/{split}")
+        print("Embeddings computed and saved successfully.")
 
     print("Computation finished successfully.")
