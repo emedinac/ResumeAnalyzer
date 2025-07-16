@@ -89,22 +89,18 @@ class BaseResumeLoader:
             # chunks = self.chunker.create_documents(samples,)
             # This implementation is more accurate and got better performance:
             docs: list[Document] = []
-            for resume_idx, sample in enumerate(tqdm(samples, desc="Chunking resumes")):
+            for doc_idx, sample in enumerate(tqdm(samples, desc="Chunking resumes")):
                 # Ensures chunks stay under size limits and preserve natural language flow
                 sample = normalize_resume_text(sample)
                 prelim_docs = self.text_splitter.split_text(sample)
-                prelim_metas = [{"resume_id": str(resume_idx),
-                                 "source": f"{field}/{resume_idx}",
-                                 "chunk_id": idx,
-                                 }
-                                for idx in range(len(prelim_docs))
-                                ]
                 chunks = self.chunker.create_documents(prelim_docs)
+                # clean chunks
                 chunks = [chunk for chunk in chunks if chunk.page_content.strip(
                 ) and chunk.page_content.strip() != "."]
+                # adding metadata to every chunk manually
                 for idx, chunk in enumerate(chunks):
-                    chunk.metadata = {"resume_id":   str(resume_idx),
-                                      "source":      f"{field}/{resume_idx}",
+                    chunk.metadata = {"resume_id":   str(doc_idx),
+                                      "source":      f"{field}/{doc_idx}",
                                       "chunk_index": idx,
                                       }
                 docs.extend(chunks)
@@ -193,7 +189,8 @@ if __name__ == "__main__":
     split = args.split
     print(f"Processing split: {split}")
     if Path(f"embeddings/chroma/{split}/{field}").exists():
-        dataset_chroma.load_indexes(f"{args.input_path}/chroma/{split}/{field}")
+        dataset_chroma.load_indexes(
+            f"{args.input_path}/chroma/{split}/{field}")
         dataset_faiss.load_indexes(f"{args.input_path}/faiss/{split}/{field}")
         print("Embeddings loaded successfully.")
     else:
