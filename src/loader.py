@@ -99,7 +99,7 @@ class BaseResumeLoader:
                 ) and chunk.page_content.strip() != "."]
                 # adding metadata to every chunk manually
                 for idx, chunk in enumerate(chunks):
-                    chunk.metadata = {"id":   str(doc_idx),
+                    chunk.metadata = {"doc_id":   str(doc_idx),
                                       "source":      f"{field}/{doc_idx}",
                                       "chunk_index": idx,
                                       }
