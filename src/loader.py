@@ -45,13 +45,16 @@ def normalize_resume_text(text):
 class BaseResumeLoader:
     """Base Loader class to load the resume-job-description-fit dataset"""
 
-    def __init__(self, path_to_dataset="cnamuangtoun/resume-job-description-fit", batch_size=256, model_name="sentence-transformers/all-mpnet-base-v2"):
+    def __init__(self, path_to_dataset="cnamuangtoun/resume-job-description-fit", 
+                 batch_size=256, 
+                 model_name="sentence-transformers/all-mpnet-base-v2",
+                 ):
         # Another one interesting: d4rk3r/resumes-raw-pdf
         self.path_to_dataset = path_to_dataset
         self.model_name = model_name
         self.batch_size = batch_size
 
-    def setup(self):
+    def setup(self, keep_in_memory=True):
         self.embedding_model = HuggingFaceEmbeddings(
             model_name=self.model_name,
             model_kwargs={'device': 'cuda'},
@@ -60,7 +63,9 @@ class BaseResumeLoader:
                            "batch_size": self.batch_size, },
             # multi_process=True,
         )
-        self.dataset = load_dataset(self.path_to_dataset)
+        self.dataset = load_dataset(self.path_to_dataset,
+                                    keep_in_memory=keep_in_memory
+                                    )
         self.split = None
         self.fields = None
         self.text_splitter = RecursiveCharacterTextSplitter(
@@ -109,7 +114,10 @@ class BaseResumeLoader:
 
 
 class ResumeLoaderFAISS(BaseResumeLoader):
-    def __init__(self, path_to_dataset="cnamuangtoun/resume-job-description-fit", batch_size=256, model_name="sentence-transformers/all-mpnet-base-v2"):
+    def __init__(self, 
+                 path_to_dataset="cnamuangtoun/resume-job-description-fit", 
+                 batch_size=256, 
+                 model_name="sentence-transformers/all-mpnet-base-v2"):
         super().__init__(path_to_dataset, batch_size, model_name)
         self.vectors = {}
 
@@ -135,9 +143,13 @@ class ResumeLoaderFAISS(BaseResumeLoader):
 
 
 class ResumeLoaderChroma(BaseResumeLoader):
-    def __init__(self, path_to_dataset="cnamuangtoun/resume-job-description-fit", batch_size=256, model_name="sentence-transformers/all-mpnet-base-v2"):
+    def __init__(self, 
+                 path_to_dataset="cnamuangtoun/resume-job-description-fit", 
+                 batch_size=256, 
+                 model_name="sentence-transformers/all-mpnet-base-v2",
+                 keep_in_memory=True):
         super().__init__(path_to_dataset, batch_size, model_name)
-        super().setup()
+        super().setup(keep_in_memory)
         self.vectors = None
 
     def build_vectorstore(self, save_path):
