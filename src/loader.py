@@ -105,9 +105,9 @@ class BaseResumeLoader:
                 # adding metadata to every chunk manually
                 for idx, chunk in enumerate(chunks):
                     chunk.metadata = {"doc_id": str(doc_idx),
-                                      "field": f"{field}",
-                                      "split": f"{split}",
-                                      "chunk_index": idx,
+                                      "field": str(field),
+                                      "split": str(split),
+                                      "chunk_index": str(idx),
                                       }
                 docs.extend(chunks)
             print(f"Total chunks: {len(docs)}")
