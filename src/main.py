@@ -19,14 +19,6 @@ tested_models = ["deepseek-ai/DeepSeek-R1",
                  ]
 
 
-def get_random_job(job_db):
-    jobs = job_db.vectors._collection.get(include=[])
-    jobs_ids = jobs["ids"]
-    jobid = jobs_ids[np.random.randint(len(jobs_ids))]
-    job_description = job_db.vectors.get(ids=[jobid])
-    return job_description
-
-
 if __name__ == "__main__":
     # Job => CV pool => Bring me 5 candidates score them. If not, Open
     # New CV => Analyze => score.
@@ -42,19 +34,19 @@ if __name__ == "__main__":
 
     # llm = llms.build_llm(model="meta-llama/Llama-2-7b")
     llm = llms.LLMScorer(model="meta-llama/Llama-3.2-1B-Instruct")
-
-    job_description = get_random_job(job_db)
+    jobs = {}
+    sample = rags.get_sample(job_db, 0)
     cv_assistant = rags.RAGSystem(db=resume_text_db,
                                   vectorstore=resume_text_db.vectors,
                                   search_type="similarity",
                                   k=25)
-    docs = cv_assistant.get_relevant_cvs(job_description["documents"][0],
+    docs = cv_assistant.get_relevant_cvs(sample["sample"]['job_description_text'],
                                          llm=llm.analyzer,)
     print(f"We found {len(docs)} possible candidates")
     scores = {}
     for idx, doc in docs.items():
         score = cv_assistant.evaluate_cv_job_pairwise(resume=doc,
-                                                      job_description=job_description["documents"][0],
+                                                      job_description=sample["sample"]['job_description_text'],
                                                       llm=llm.judge,
                                                       )
         scores[idx] = score

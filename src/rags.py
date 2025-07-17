@@ -12,6 +12,20 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain.chains.combine_documents import create_stuff_documents_chain
 
 import prompts
+import numpy as np
+
+
+def get_sample(db, idx=None, split="train"):
+    data = db.dataset[split]
+    if idx is None:
+        sample = data[np.random.randint(len(data))]
+    else:
+        sample = data[idx]
+    # job_chunk = db.vectors.similarity_search(sample["job_description_text"], k=5)
+    return {"sample": sample,
+            "split": split,
+            "idx": idx
+            }
 
 
 class RAGSystem:
@@ -44,7 +58,7 @@ class RAGSystem:
 
     def get_relevant_cvs(self, job_description, llm, split="train",):
         docs_chunks = self.retriever.invoke(job_description)
-        docs = {d.metadata["resume_id"] for d in docs_chunks}
+        docs = {d.metadata["doc_id"] for d in docs_chunks}
 
         prompt = ChatPromptTemplate.from_messages([
             SystemMessagePromptTemplate.from_template(
@@ -55,7 +69,9 @@ class RAGSystem:
         ])
         candidates = {}
         for doc_id in docs:
-            resume = self.db.dataset[split][int(doc_id)]['resume_text']
+            resume = get_sample(self.db,
+                                idx=int(doc_id),
+                                split=split)["sample"]['resume_text']
 
             str_prompt = prompt.format_prompt(
                 context=job_description,
