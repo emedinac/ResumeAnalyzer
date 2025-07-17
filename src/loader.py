@@ -45,8 +45,8 @@ def normalize_resume_text(text):
 class BaseResumeLoader:
     """Base Loader class to load the resume-job-description-fit dataset"""
 
-    def __init__(self, path_to_dataset="cnamuangtoun/resume-job-description-fit", 
-                 batch_size=256, 
+    def __init__(self, path_to_dataset="cnamuangtoun/resume-job-description-fit",
+                 batch_size=256,
                  model_name="sentence-transformers/all-mpnet-base-v2",
                  ):
         # Another one interesting: d4rk3r/resumes-raw-pdf
@@ -104,8 +104,9 @@ class BaseResumeLoader:
                 ) and chunk.page_content.strip() != "."]
                 # adding metadata to every chunk manually
                 for idx, chunk in enumerate(chunks):
-                    chunk.metadata = {"doc_id":   str(doc_idx),
-                                      "source":      f"{field}/{doc_idx}",
+                    chunk.metadata = {"doc_id": str(doc_idx),
+                                      "field": f"{field}",
+                                      "split": f"{split}",
                                       "chunk_index": idx,
                                       }
                 docs.extend(chunks)
@@ -114,9 +115,9 @@ class BaseResumeLoader:
 
 
 class ResumeLoaderFAISS(BaseResumeLoader):
-    def __init__(self, 
-                 path_to_dataset="cnamuangtoun/resume-job-description-fit", 
-                 batch_size=256, 
+    def __init__(self,
+                 path_to_dataset="cnamuangtoun/resume-job-description-fit",
+                 batch_size=256,
                  model_name="sentence-transformers/all-mpnet-base-v2"):
         super().__init__(path_to_dataset, batch_size, model_name)
         self.vectors = {}
@@ -143,9 +144,9 @@ class ResumeLoaderFAISS(BaseResumeLoader):
 
 
 class ResumeLoaderChroma(BaseResumeLoader):
-    def __init__(self, 
-                 path_to_dataset="cnamuangtoun/resume-job-description-fit", 
-                 batch_size=256, 
+    def __init__(self,
+                 path_to_dataset="cnamuangtoun/resume-job-description-fit",
+                 batch_size=256,
                  model_name="sentence-transformers/all-mpnet-base-v2",
                  keep_in_memory=True):
         super().__init__(path_to_dataset, batch_size, model_name)
