@@ -1,6 +1,6 @@
 # Resume Analyser
 
-Resume Analyser is a tool that uses Retrieval-Augmented Generation (RAG) to deeply understand candidate profiles. Instead of just matching keywords, it connects skills, experience, and qualifications to provide clear, explainable insights for hiring decisions. Perfect for recruiters, HR tech platforms, and anyone looking to evaluate talent more effectively. This project solve the following situations (assigning each a quantitative compatibility score and a qualititaive explaination):
+Resume Analyser is a tool that uses Retrieval-Augmented Generation (RAG) to deeply understand candidate profiles. Instead of just matching keywords, it connects skills, experience, and qualifications to provide clear, explainable insights for hiring decisions. Perfect for recruiters, HR tech platforms, and anyone looking to evaluate talent more effectively. This project solve the following situations (assigning each a quantitative compatibility score and a qualitative explanation):
 
 1. Given a novel job description and a Resume document database, retrieve the top K most relevant candidates, retain their document identifiers.
 2. If the initial candidate set fails to meet predefined fit thresholds, ingest a newly submitted Resume, evaluate it against the job requirements.
