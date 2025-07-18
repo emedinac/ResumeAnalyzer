@@ -75,7 +75,7 @@ class BaseResumeLoader:
         # Smaller chunks (e.g. 450 tokens) or larger (650+) underperformed slightly.
         self.text_splitter = RecursiveCharacterTextSplitter(
             chunk_size=2500,
-            chunk_overlap=250,
+            chunk_overlap=100,
             length_function=len,
             separators=["\n\n", "\n", ".", " ", ""]
         )
@@ -83,8 +83,8 @@ class BaseResumeLoader:
             embeddings=self.embedding_model,
             buffer_size=1,
             breakpoint_threshold_type="percentile",
-            breakpoint_threshold_amount=75,  # or 90 with chunk_size=1000
-            sentence_split_regex=r"(?<=[.?!])\s*",  # .?!
+            breakpoint_threshold_amount=75,  # or 90 with chunk_size=1000 and chunk_overlap=100
+            sentence_split_regex=r"(?<=[.?!•])\s*",  # .?!
         )
 
     def compute_embeddings(self, split="train"):
