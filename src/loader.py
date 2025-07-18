@@ -77,7 +77,7 @@ class BaseResumeLoader:
             chunk_size=2500,
             chunk_overlap=50,
             length_function=len,
-            separators=["\n\n", "\n", ".", " ", ""]
+            separators=["\n\n", "\n", "•", ":", "\t", ".", "- ", " ", ""]
         )
         self.chunker = SemanticChunker(
             embeddings=self.embedding_model,
