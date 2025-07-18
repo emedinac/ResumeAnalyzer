@@ -43,30 +43,6 @@ def normalize_resume_text(text):
     return text
 
 
-class CustomTokenSplitter:
-    # using this to get the right number of tokens instead of wording level as the article suggested.
-    # https://www.rohan-paul.com/p/document-digitization-and-chunking
-    def __init__(self, model_name: str,
-                 chunk_size: int = 550,  # suggested number by article
-                 chunk_overlap: int = 55  # 10% suggested
-                 ):
-        self.tokenizer = AutoTokenizer.from_pretrained(model_name)
-        self.chunk_size = chunk_size
-        self.chunk_overlap = chunk_overlap
-
-    def split_text(self, text: str):
-        input_ids = self.tokenizer.encode(text, add_special_tokens=False)
-        chunks = []
-        start = 0
-        while start < len(input_ids):
-            end = start + self.chunk_size
-            chunk_ids = input_ids[start:end]
-            chunk_text = self.tokenizer.decode(chunk_ids)
-            chunks.append(chunk_text)
-            start += self.chunk_size - self.chunk_overlap
-        return chunks
-
-
 class BaseResumeLoader:
     """Base Loader class to load the resume-job-description-fit dataset"""
 
@@ -98,15 +74,10 @@ class BaseResumeLoader:
         # balancing context and specificity.
         # Smaller chunks (e.g. 450 tokens) or larger (650+) underperformed slightly.
         self.text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=550,
-            chunk_overlap=110,
+            chunk_size=550*3,
+            chunk_overlap=55*3,
             length_function=len,
             separators=["\n\n", "\n", ".", " ", ""]
-        )
-        self.token_splitter = CustomTokenSplitter(
-            model_name=self.embedding_model.model_name,
-            chunk_size=150,
-            chunk_overlap=15,
         )
         self.chunker = SemanticChunker(
             embeddings=self.embedding_model,
@@ -131,7 +102,7 @@ class BaseResumeLoader:
             for doc_idx, sample in enumerate(tqdm(samples, desc="Chunking resumes")):
                 # Ensures chunks stay under size limits and preserve natural language flow
                 sample = normalize_resume_text(sample)
-                prelim_docs = self.token_splitter.split_text(sample)
+                prelim_docs = self.text_splitter.split_text(sample)
                 chunks = self.chunker.create_documents(prelim_docs)
                 # clean chunks
                 chunks = [chunk for chunk in chunks if chunk.page_content.strip(
