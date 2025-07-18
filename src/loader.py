@@ -105,8 +105,8 @@ class BaseResumeLoader:
         )
         self.token_splitter = CustomTokenSplitter(
             model_name=self.embedding_model.model_name,
-            chunk_size=200,
-            chunk_overlap=20,
+            chunk_size=150,
+            chunk_overlap=15,
         )
         self.chunker = SemanticChunker(
             embeddings=self.embedding_model,
