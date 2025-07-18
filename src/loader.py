@@ -1,3 +1,4 @@
+from transformers import AutoTokenizer
 from datasets import load_dataset
 from langchain_community.vectorstores import FAISS
 from langchain_chroma import Chroma
@@ -5,7 +6,7 @@ from langchain_huggingface import HuggingFaceEmbeddings
 # looks like the best in the 0.3v
 # https://medium.com/@anixlynch/7-chunking-strategies-for-langchain-b50dac194813
 from langchain_experimental.text_splitter import SemanticChunker
-from langchain.text_splitter import RecursiveCharacterTextSplitter, TokenTextSplitter
+from langchain.text_splitter import RecursiveCharacterTextSplitter
 from pathlib import Path
 from langchain.schema import Document
 from tqdm import tqdm
@@ -40,6 +41,29 @@ def normalize_resume_text(text):
     )
 
     return text
+
+
+class CustomTokenSplitter:
+    # using this to get the right number of tokens instead of wording level as the article suggested.
+    def __init__(self, model_name: str,
+                 chunk_size: int = 550,
+                 chunk_overlap: int = 55
+                 ):
+        self.tokenizer = AutoTokenizer.from_pretrained(model_name)
+        self.chunk_size = chunk_size
+        self.chunk_overlap = chunk_overlap
+
+    def split_text(self, text: str):
+        input_ids = self.tokenizer.encode(text, add_special_tokens=False)
+        chunks = []
+        start = 0
+        while start < len(input_ids):
+            end = start + self.chunk_size
+            chunk_ids = input_ids[start:end]
+            chunk_text = self.tokenizer.decode(chunk_ids)
+            chunks.append(chunk_text)
+            start += self.chunk_size - self.chunk_overlap
+        return chunks
 
 
 class BaseResumeLoader:
@@ -78,8 +102,8 @@ class BaseResumeLoader:
             length_function=len,
             separators=["\n\n", "\n", ".", " ", ""]
         )
-        self.token_splitter = TokenTextSplitter(
-            encoding_name=self.embedding_model,
+        self.token_splitter = CustomTokenSplitter(
+            model_name=self.embedding_model.model_name,
             chunk_size=550,
             chunk_overlap=55,
         )
