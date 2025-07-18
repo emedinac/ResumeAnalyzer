@@ -5,7 +5,7 @@ from langchain_huggingface import HuggingFaceEmbeddings
 # looks like the best in the 0.3v
 # https://medium.com/@anixlynch/7-chunking-strategies-for-langchain-b50dac194813
 from langchain_experimental.text_splitter import SemanticChunker
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain.text_splitter import RecursiveCharacterTextSplitter, TokenTextSplitter
 from pathlib import Path
 from langchain.schema import Document
 from tqdm import tqdm
@@ -69,11 +69,19 @@ class BaseResumeLoader:
         self.split = None
         self.fields = None
         # https://www.rohan-paul.com/p/document-digitization-and-chunking
+        # They found ~550 tokens per chunk yielded the best retrieval performance in their setting,
+        # balancing context and specificity.
+        # Smaller chunks (e.g. 450 tokens) or larger (650+) underperformed slightly.
         self.text_splitter = RecursiveCharacterTextSplitter(
             chunk_size=550,
             chunk_overlap=110,
             length_function=len,
             separators=["\n\n", "\n", ".", " ", ""]
+        )
+        self.token_splitter = TokenTextSplitter(
+            embeddings=self.embedding_model,
+            chunk_size=550,
+            chunk_overlap=55,
         )
         self.chunker = SemanticChunker(
             embeddings=self.embedding_model,
@@ -98,7 +106,7 @@ class BaseResumeLoader:
             for doc_idx, sample in enumerate(tqdm(samples, desc="Chunking resumes")):
                 # Ensures chunks stay under size limits and preserve natural language flow
                 sample = normalize_resume_text(sample)
-                prelim_docs = self.text_splitter.split_text(sample)
+                prelim_docs = self.token_splitter.split_text(sample)
                 chunks = self.chunker.create_documents(prelim_docs)
                 # clean chunks
                 chunks = [chunk for chunk in chunks if chunk.page_content.strip(

@@ -13,5 +13,6 @@ dependencies = [
     "langchain-community>=0.3.27",
     "langchain-experimental>=0.3.4",
     "langchain-huggingface>=0.3.0",
+    "rank-bm25>=0.2.2",
     "sentence-transformers>=5.0.0",
 ]
