@@ -79,7 +79,7 @@ class BaseResumeLoader:
             separators=["\n\n", "\n", ".", " ", ""]
         )
         self.token_splitter = TokenTextSplitter(
-            embeddings=self.embedding_model,
+            encoding_name=self.embedding_model,
             chunk_size=550,
             chunk_overlap=55,
         )
