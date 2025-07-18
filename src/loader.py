@@ -68,9 +68,10 @@ class BaseResumeLoader:
                                     )
         self.split = None
         self.fields = None
+        # https://www.rohan-paul.com/p/document-digitization-and-chunking
         self.text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=1000,
-            chunk_overlap=200,
+            chunk_size=550,
+            chunk_overlap=110,
             length_function=len,
             separators=["\n\n", "\n", ".", " ", ""]
         )
