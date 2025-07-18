@@ -75,7 +75,7 @@ class BaseResumeLoader:
         # Smaller chunks (e.g. 450 tokens) or larger (650+) underperformed slightly.
         self.text_splitter = RecursiveCharacterTextSplitter(
             chunk_size=2500,
-            chunk_overlap=100,
+            chunk_overlap=50,
             length_function=len,
             separators=["\n\n", "\n", ".", " ", ""]
         )
