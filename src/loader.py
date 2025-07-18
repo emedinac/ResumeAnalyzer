@@ -45,9 +45,10 @@ def normalize_resume_text(text):
 
 class CustomTokenSplitter:
     # using this to get the right number of tokens instead of wording level as the article suggested.
+    # https://www.rohan-paul.com/p/document-digitization-and-chunking
     def __init__(self, model_name: str,
-                 chunk_size: int = 550,
-                 chunk_overlap: int = 55
+                 chunk_size: int = 550,  # suggested number by article
+                 chunk_overlap: int = 55  # 10% suggested
                  ):
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
         self.chunk_size = chunk_size
@@ -104,8 +105,8 @@ class BaseResumeLoader:
         )
         self.token_splitter = CustomTokenSplitter(
             model_name=self.embedding_model.model_name,
-            chunk_size=550,
-            chunk_overlap=55,
+            chunk_size=512,
+            chunk_overlap=50,
         )
         self.chunker = SemanticChunker(
             embeddings=self.embedding_model,
