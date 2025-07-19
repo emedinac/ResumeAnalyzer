@@ -69,7 +69,6 @@ class ResumeJobMatchGenerator:
 
         # LLM for JOB Generation
         model_name = "meta-llama/Meta-Llama-3-8B-Instruct"
-        # model_name = "meta-llama/Llama-3.2-1B-Instruct"
         tokenizer = AutoTokenizer.from_pretrained(model_name)
         tokenizer.pad_token = tokenizer.eos_token
         cv_pipe = pipeline(
@@ -84,6 +83,7 @@ class ResumeJobMatchGenerator:
         generator1 = HuggingFacePipeline(pipeline=cv_pipe)
 
         model_name = "meta-llama/Llama-4-Scout-17B-16E-Instruct"
+        model_name = "meta-llama/Llama-3.2-1B-Instruct"
         tokenizer = AutoTokenizer.from_pretrained(model_name)
         tokenizer.pad_token = tokenizer.eos_token
         cv_pipe = pipeline(
