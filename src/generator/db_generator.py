@@ -133,7 +133,7 @@ class ResumeJobMatchGenerator:
 
                 # generate job description
                 job_descriptions = []
-                for _, model in tqdm(self.generators, desc="- jobs"):
+                for model in tqdm(self.generators, desc="- jobs"):
                     jds = model.invoke(jds_prompts)
                     job_descriptions.append(jds)
 
@@ -141,7 +141,7 @@ class ResumeJobMatchGenerator:
                 sims_group = []
                 summarizations = []
                 biases = []
-                for _, jds in tqdm(job_descriptions, desc="- metrics"):
+                for jds in tqdm(job_descriptions, desc="- metrics"):
                     # classification 3-class
                     cls = []
                     summ = []
