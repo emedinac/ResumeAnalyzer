@@ -78,10 +78,9 @@ class ResumeJobMatchGenerator:
 
         # LLM for JOB Generation
         self.generators = []
-        for model_name in llm_model_names:
+        for model_name, gpu in zip(llm_model_names, [0, 0, 1, 1, 1]):
             tokenizer = AutoTokenizer.from_pretrained(model_name)
             tokenizer.pad_token = tokenizer.eos_token
-            gpu = np.random.randint(0, 2)
             print(gpu, model_name)
             cv_pipe = pipeline(
                 "text-generation",
