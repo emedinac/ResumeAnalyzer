@@ -12,12 +12,20 @@ from diversity import compression_ratio, ngram_diversity_score, homogenization_s
 import torch
 import torch.nn.functional as F
 
-model_names = [
+llm_model_names = ["meta-llama/Meta-Llama-3-8B-Instruct",
+                   "meta-llama/Llama-3.2-1B-Instruct",
+                   "deepseek-ai/DeepSeek-R1-Distill-Llama-8B",
+                   "xai-org/grok-3-8b-instruct",
+                   "google/flan-t5-large",
+                   ]
+
+embedding_model_names = [
     "sentence-transformers/all-MiniLM-L6-v2",
     "intfloat/e5-large-v2",
     "sentence-transformers/all-mpnet-base-v2",
 ]
-embedding_models = {name: SentenceTransformer(name) for name in model_names}
+embedding_models = {name: SentenceTransformer(
+    name) for name in embedding_model_names}
 
 
 def compute_similarity(resume, jd, model):
@@ -68,7 +76,7 @@ class ResumeJobMatchGenerator:
         self.dbs = [db1, db2, db3, db4]
 
         # LLM for JOB Generation
-        model_name = "meta-llama/Meta-Llama-3-8B-Instruct"
+        model_name = llm_model_names[0]
         tokenizer = AutoTokenizer.from_pretrained(model_name)
         tokenizer.pad_token = tokenizer.eos_token
         cv_pipe = pipeline(
@@ -83,7 +91,7 @@ class ResumeJobMatchGenerator:
         generator1 = HuggingFacePipeline(pipeline=cv_pipe)
 
         model_name = "meta-llama/Llama-4-Scout-17B-16E-Instruct"
-        model_name = "meta-llama/Llama-3.2-1B-Instruct"
+        model_name = llm_model_names[1]
         tokenizer = AutoTokenizer.from_pretrained(model_name)
         tokenizer.pad_token = tokenizer.eos_token
         cv_pipe = pipeline(
@@ -97,7 +105,7 @@ class ResumeJobMatchGenerator:
         )
         generator2 = HuggingFacePipeline(pipeline=cv_pipe)
 
-        model_name = "deepseek-ai/DeepSeek-R1-Distill-Llama-8B"
+        model_name = llm_model_names[2]
         tokenizer = AutoTokenizer.from_pretrained(model_name)
         tokenizer.pad_token = tokenizer.eos_token
         cv_pipe = pipeline(
@@ -111,7 +119,7 @@ class ResumeJobMatchGenerator:
         )
         generator3 = HuggingFacePipeline(pipeline=cv_pipe)
 
-        model_name = "xai-org/grok-3-8b-instruct"
+        model_name = llm_model_names[3]
         tokenizer = AutoTokenizer.from_pretrained(model_name)
         tokenizer.pad_token = tokenizer.eos_token
         cv_pipe = pipeline(
@@ -125,7 +133,7 @@ class ResumeJobMatchGenerator:
         )
         generator4 = HuggingFacePipeline(pipeline=cv_pipe)
 
-        model_name = "google/flan-t5-large"
+        model_name = llm_model_names[4]
         tokenizer = AutoTokenizer.from_pretrained(model_name)
         tokenizer.pad_token = tokenizer.eos_token
         cv_pipe = pipeline(
