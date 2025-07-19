@@ -74,6 +74,13 @@ class ResumeJobMatchGenerator:
             "text": "resume",
         })
         self.dbs = [db1, db2, db3, db4]
+        # Prepare prompt templates once
+        self.gen_templates = [getattr(prompts, p)
+                              for p in prompts.__dict__ if p.startswith("gen_")]
+        self.noise_templates = [
+            getattr(prompts, p) for p in prompts.__dict__ if p.startswith("noise_")]
+        self.fmt_templates = [
+            getattr(prompts, p) for p in prompts.__dict__ if p.startswith("format_")]
 
         # LLM for JOB Generation
         self.generators = []
@@ -108,20 +115,18 @@ class ResumeJobMatchGenerator:
     def generate(self):
         # Generate dataset using the loaded model
         combined_datasets = {}
-        gen_templates = [p for p in prompts.__dict__ if "gen_" in p]
-        noise_templates = [p for p in prompts.__dict__ if "noise_" in p]
-        format_templates = [p for p in prompts.__dict__ if "format_" in p]
         for idx, db in enumerate(self.dbs):
             for split, data in db.items():
                 print(f"{idx}/{len(self.db_names)} - {split} - {db}")
                 collected = []
-                for resume in tqdm(data["resume"], desc="- structuring"):
-                    gen_prompt = np.random.choice(gen_templates)
-                    gen_prompt = getattr(prompts, gen_prompt)
-                    noise_prompt = np.random.choice(noise_templates)
-                    noise_prompt = getattr(prompts, noise_prompt)
-                    format_prompt = np.random.choice(format_templates)
-                    format_prompt = getattr(prompts, format_prompt)
+                resumes = data["resume"]
+                for ii, resume in tqdm(enumerate(resumes),
+                                       desc="- structuring",
+                                       total=len(resumes)
+                                       ):
+                    gen_prompt = np.random.choice(self.gen_templates)
+                    noise_prompt = np.random.choice(self.noise_templates)
+                    format_prompt = np.random.choice(self.fmt_templates)
 
                     # pipeline
                     prompt_jd = f"{gen_prompt}\n{noise_prompt}\n{format_prompt}\nRESUME:\n{resume}ANSWER:\n"
@@ -135,22 +140,20 @@ class ResumeJobMatchGenerator:
                         jd = model.invoke(prompt_jd)
                         job_descriptions.append(jd)
 
-                        # classification 3-class
+                        # classification 3-class and reasoning explainations about resume-job match
                         cls = []
                         summ = []
-                        for m in tqdm(self.generators, desc="- metrics"):
+                        for m in tqdm(self.generators, desc="- prompts"):
                             prompt_cls = prompts.evaluation_template.format_map({"resume": resume,
                                                                                 "job_description": jd})
-                            prompt_cls = f"\n{prompt_cls}\nANSWER:\n"
-                            cls.append(m.invoke(prompt_cls))
-
-                            # reasoning explainations about resume-job match
+                            cls.append(f"\n{prompt_cls}\nANSWER:\n")
                             prompt_summ = prompts.system_evaluator_template.format_map({"resume": resume,
                                                                                         "job_description": jd})
-                            prompt_summ = f"\n{prompt_summ}\nANSWER:\n"
-                            summ.append(m.invoke(prompt_summ))
-                        categories.append(cls)
-                        summarizations.append(summ)
+                            summ.append(f"\n{prompt_summ}\nANSWER:\n")
+
+                        for m in tqdm(self.generators, desc="- metrics"):
+                            categories.append(m.invoke(cls))
+                            summarizations.append(m.invoke(summ))
 
                         # Compute biases
                         biases.append([m(jd) for m in self.bias_models])
@@ -172,7 +175,7 @@ class ResumeJobMatchGenerator:
                     homogenization_bertscore = homogenization_score(job_descriptions,
                                                                     'bertscore')
 
-                    collected.append({
+                    obj = {
                         "resume": resume,
                         "job_description": job_descriptions,
                         "relevance_label": categories,
@@ -186,7 +189,9 @@ class ResumeJobMatchGenerator:
                         "compress_ratio": compress_ratio,
                         "db_name": self.db_names[idx],
                         "split": split,
-                    })
+                    }
+                    np.save(f"db/collected_{idx}_{split}_{ii}.npy", obj)
+                    collected.append(obj)
                 ds_split = Dataset.from_list(collected)
                 if split in combined_datasets:
                     combined_datasets[f"{idx}_{split}"] = concatenate_datasets([combined_datasets[f"{idx}_{split}"],
