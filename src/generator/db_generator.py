@@ -9,7 +9,6 @@ import numpy as np
 from tqdm import tqdm
 from sentence_transformers import SentenceTransformer, util
 from diversity import compression_ratio, ngram_diversity_score, homogenization_score
-import torch
 import torch.nn.functional as F
 
 llm_model_names = ["meta-llama/Meta-Llama-3-8B-Instruct",
@@ -36,10 +35,11 @@ def load_generator(model_name):
         "text-generation",
         model=model_name,
         tokenizer=tokenizer,
-        batch_size=8,
+        batch_size=1,
         temperature=0.5,
         top_p=0.95,
         return_full_text=False,
+        device=np.random.randint(0, 2)
     )
     return HuggingFacePipeline(pipeline=cv_pipe)
 
