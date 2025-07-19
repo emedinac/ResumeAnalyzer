@@ -12,6 +12,8 @@ from diversity import compression_ratio, ngram_diversity_score, homogenization_s
 import torch
 import torch.nn.functional as F
 
+torch.set_float32_matmul_precision('high')
+
 llm_model_names = ["tiiuae/Falcon3-1B-Instruct",
                    "meta-llama/Llama-3.2-1B-Instruct",
                    "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B",
