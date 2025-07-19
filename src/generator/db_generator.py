@@ -154,8 +154,8 @@ class ResumeJobMatchGenerator:
                             summ.append(f"\n{prompt_summ}\nANSWER:\n")
 
                         for m in tqdm(self.generators, desc="- metrics"):
-                            categories.append(m.ainvoke(cls))
-                            summarizations.append(m.ainvoke(summ))
+                            categories.append(m.invoke(cls))
+                            summarizations.append(m.invoke(summ))
 
                         # Compute biases
                         biases.append([m(jd) for m in self.bias_models])
