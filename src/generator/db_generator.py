@@ -81,6 +81,8 @@ class ResumeJobMatchGenerator:
         for model_name in llm_model_names:
             tokenizer = AutoTokenizer.from_pretrained(model_name)
             tokenizer.pad_token = tokenizer.eos_token
+            gpu = np.random.randint(0, 2)
+            print(gpu, model_name)
             cv_pipe = pipeline(
                 "text-generation",
                 model=model_name,
@@ -89,7 +91,7 @@ class ResumeJobMatchGenerator:
                 temperature=0.5,
                 top_p=0.95,
                 return_full_text=False,
-                device=np.random.randint(0, 2)
+                device=gpu
             )
             self.generators.append(HuggingFacePipeline(pipeline=cv_pipe))
 
