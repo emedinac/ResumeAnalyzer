@@ -78,7 +78,6 @@ class ResumeJobMatchGenerator:
             tokenizer=tokenizer,
             temperature=0.5,
             top_p=0.95,
-            pad_token_id=tokenizer.eos_token_id,
             return_full_text=False
         )
         generator1 = HuggingFacePipeline(pipeline=cv_pipe)
@@ -92,7 +91,6 @@ class ResumeJobMatchGenerator:
             tokenizer=tokenizer,
             temperature=0.5,
             top_p=0.95,
-            pad_token_id=tokenizer.eos_token_id,
             return_full_text=False
         )
         generator2 = HuggingFacePipeline(pipeline=cv_pipe)
@@ -106,7 +104,6 @@ class ResumeJobMatchGenerator:
             tokenizer=tokenizer,
             temperature=0.5,
             top_p=0.95,
-            pad_token_id=tokenizer.eos_token_id,
             return_full_text=False
         )
         generator3 = HuggingFacePipeline(pipeline=cv_pipe)
@@ -120,7 +117,6 @@ class ResumeJobMatchGenerator:
             tokenizer=tokenizer,
             temperature=0.5,
             top_p=0.95,
-            pad_token_id=tokenizer.eos_token_id,
             return_full_text=False
         )
         generator4 = HuggingFacePipeline(pipeline=cv_pipe)
@@ -134,7 +130,6 @@ class ResumeJobMatchGenerator:
             tokenizer=tokenizer,
             temperature=0.5,
             top_p=0.95,
-            pad_token_id=tokenizer.eos_token_id,
             return_full_text=False
         )
         generator5 = HuggingFacePipeline(pipeline=cv_pipe)
@@ -252,16 +247,5 @@ class ResumeJobMatchGenerator:
 
 
 if __name__ == "__main__":
-    import argparse
-    parser = argparse.ArgumentParser(
-        prog='loader', description='Geenerate a resume-job match/fit dataset')
-    parser.add_argument(
-        '--output_path', type=str, default="embeddings")
-    parser.add_argument(
-        '--iterations', type=int, default=5)
-    parser.add_argument(
-        '--split', type=str, default="train")
-    args = parser.parse_args()
-
     generator = ResumeJobMatchGenerator()
     generator.generate()
