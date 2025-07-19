@@ -193,6 +193,7 @@ class ResumeJobMatchGenerator:
                                                                                 ds_split])
                 else:
                     combined_datasets[f"{idx}_{split}"] = ds_split
+                np.save(f"collected_{idx}_{split}.npy", collected)
         final_dataset = DatasetDict(combined_datasets)
         final_dataset.save_to_disk("resume-job-match")
         print("\n\nDataset Completed!!\n\n")
