@@ -77,6 +77,7 @@ class ResumeJobMatchGenerator:
         self.dbs = [db1, db2, db3, db4]
 
         # LLM for JOB Generation
+        self.generators = []
         for model_name in llm_model_names:
             tokenizer = AutoTokenizer.from_pretrained(model_name)
             tokenizer.pad_token = tokenizer.eos_token
