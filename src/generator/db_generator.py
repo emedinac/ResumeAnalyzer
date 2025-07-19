@@ -9,6 +9,7 @@ import numpy as np
 from tqdm import tqdm
 from sentence_transformers import SentenceTransformer, util
 from diversity import compression_ratio, ngram_diversity_score, homogenization_score
+import torch
 import torch.nn.functional as F
 
 llm_model_names = ["meta-llama/Meta-Llama-3-8B-Instruct",
@@ -26,22 +27,6 @@ embedding_model_names = [
 ]
 embedding_models = {name: SentenceTransformer(
     name) for name in embedding_model_names}
-
-
-def load_generator(model_name):
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
-    tokenizer.pad_token = tokenizer.eos_token
-    cv_pipe = pipeline(
-        "text-generation",
-        model=model_name,
-        tokenizer=tokenizer,
-        batch_size=1,
-        temperature=0.5,
-        top_p=0.95,
-        return_full_text=False,
-        device=np.random.randint(0, 2)
-    )
-    return HuggingFacePipeline(pipeline=cv_pipe)
 
 
 def compute_similarity(resume, jd, model):
@@ -92,7 +77,22 @@ class ResumeJobMatchGenerator:
         self.dbs = [db1, db2, db3, db4]
 
         # LLM for JOB Generation
-        self.generators = None
+        self.generators = []
+        for model_name in llm_model_names:
+            tokenizer = AutoTokenizer.from_pretrained(model_name)
+            tokenizer.pad_token = tokenizer.eos_token
+            cv_pipe = pipeline(
+                "text-generation",
+                model=model_name,
+                tokenizer=tokenizer,
+                batch_size=1,
+                temperature=0.5,
+                top_p=0.95,
+                return_full_text=False,
+                device=np.random.randint(0, 2)
+            )
+            self.generators.append(HuggingFacePipeline(pipeline=cv_pipe))
+
         # BIAS MODELS :)
         bias_model = "maximuspowers/bias-detection-ner"
         tokenizer = AutoTokenizer.from_pretrained(bias_model)
@@ -115,7 +115,7 @@ class ResumeJobMatchGenerator:
             for split, data in db.items():
                 print(f"{idx}/{len(self.db_names)} - {split} - {db}")
                 collected = []
-                for resume in tqdm(data["resume"]):
+                for resume in tqdm(data["resume"], desc="- resumes: "):
                     gen_prompt = np.random.choice(gen_templates)
                     gen_prompt = getattr(prompts, gen_prompt)
                     noise_prompt = np.random.choice(noise_templates)
@@ -130,8 +130,7 @@ class ResumeJobMatchGenerator:
                     sims_group = []
                     summarizations = []
                     biases = []
-                    for _, model_name in enumerate(llm_model_names):
-                        model = load_generator(model_name)
+                    for _, model in enumerate(self.generators):
                         # generate job description
                         jd = model.invoke(prompt_jd)
                         job_descriptions.append(jd)
@@ -139,8 +138,7 @@ class ResumeJobMatchGenerator:
                         # classification 3-class
                         cls = []
                         summ = []
-                        for m in llm_model_names:
-                            m = load_generator(m)
+                        for m in self.generators:
                             prompt_cls = prompts.evaluation_template.format_map({"resume": resume,
                                                                                 "job_description": jd})
                             prompt_cls = f"\n{prompt_cls}\nANSWER:\n"
