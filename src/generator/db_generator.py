@@ -131,9 +131,12 @@ class ResumeJobMatchGenerator:
                                            desc="- structuring",
                                            total=len(resumes)
                                            ):
-                        gen_prompt = np.random.choice(self.gen_templates)
-                        noise_prompt = np.random.choice(self.noise_templates)
-                        format_prompt = np.random.choice(self.fmt_templates)
+                        gen_prompt = str(
+                            np.random.choice(self.gen_templates))
+                        noise_prompt = str(
+                            np.random.choice(self.noise_templates))
+                        format_prompt = str(
+                            np.random.choice(self.fmt_templates))
 
                         # pipeline
                         prompt_jd = f"{gen_prompt}\n{noise_prompt}\n{format_prompt}\nRESUME:\n{resume}ANSWER:\n"

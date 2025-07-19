@@ -76,34 +76,49 @@ noise_template_8 = """Highlight any leadership or mentorship aspects.
 noise_template_9 = """Target the job description to Principal or high senior level professionals only.
 """
 
-system_evaluator_template = """You are a **senior technical recruiter and hiring analyst** with over 25 years of experience assessing resume-job matches. 
-You will evaluate how well the given **Job Description** aligns with the provided **Resume**, and you must be extremely precise and transparent in your reasoning.
+system_evaluator_template = """You are a senior technical recruiter with over 25 years of experience evaluating resume-job fit.
+Evaluate how well the following **Resume** matches the **Job Description**.
+
+---
 
 Resume:
 {resume}
 
 Job Description:
 {job_description}
+
+---
 
 **Process:**
-1. **Identify 3-5 key requirements** from the Job Description (skills, experience, qualifications).
-2. **For each requirement**, assess whether the Resume demonstrates that competence. Provide evidence from the resume (e.g., “STATA programming for pollution analysis”).
-3. **Assign a relevance label**:
-   - **Highly Relevant** - Resume clearly meets most key requirements with direct evidence.
-   - **Moderately Relevant** - Resume meets some requirements but lacks full coverage or explicit evidence.
-   - **Not Relevant** - Resume meets few or none of the key requirements.
+1. Identify 3-5 of the most important requirements from the job description.
+2. For each requirement, assess whether the resume demonstrates that qualification and provide short supporting evidence.
+3. Conclude with a single relevance label from the following options:
+   - Highly Relevant
+   - Moderately Relevant
+   - Not Relevant
 
-**Output Format:**
-- A JSON object with the following fields:
-  - '"requirements"': list of key Job Description requirements you extracted
-  - '"assessment"': list of objects ' "requirement": ..., "met": true/false, "evidence": "..." '
-  - '"label"': one of '"Highly Relevant"', '"Moderately Relevant"', '"Not Relevant"'
-  - '"reasoning"': a 2-3 sentence justification synthesizing the individual assessments
+**Output Format (bullet points):**
 
+- **Key Requirements:**
+  - Requirement 1
+  - Requirement 2
+  - ...
+
+- **Assessment:**
+  - *Requirement 1*: Met — [evidence]
+  - *Requirement 2*: Not Met — [evidence or missing]
+
+- **Label**: [Choose one: Highly Relevant / Moderately Relevant / Not Relevant]
+
+- **Reasoning**: [Write a 2-3 sentence summary explaining why this label was chosen based on the above assessments.]
 """
-evaluation_template = """You are a **senior technical recruiter and hiring analyst** with over 25 years of experience assessing resume-job matches. 
-You will evaluate how well the given **Job Description** aligns with the provided **Resume**, and you must be extremely precise and transparent in your reasoning.
-Classify the relevance of the following resume to the given job description.
+evaluation_template = """You are a senior technical recruiter with 25+ years of experience. Your task is to **classify** the relevance of a resume to a job description using only one of the following labels:
+
+- Highly Relevant  
+- Moderately Relevant  
+- Not Relevant
+
+**Do not explain your answer or provide any other information. Return only the exact label.**
 
 Resume:
 {resume}
@@ -111,5 +126,5 @@ Resume:
 Job Description:
 {job_description}
 
-Relevance class (choose one): "Highly Relevant", "Moderately Relevant", "Not Relevant". no more information just the Relevance class.
+Your response (one of: Highly Relevant, Moderately Relevant, Not Relevant)
 """
