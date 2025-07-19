@@ -94,7 +94,7 @@ class ResumeJobMatchGenerator:
                 "text-generation",
                 model=model_name,
                 tokenizer=tokenizer,
-                batch_size=1,
+                batch_size=8,
                 temperature=0.5,
                 top_p=0.95,
                 return_full_text=False,
