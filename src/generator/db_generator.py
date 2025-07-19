@@ -29,6 +29,21 @@ embedding_models = {name: SentenceTransformer(
     name) for name in embedding_model_names}
 
 
+def load_generator(model_name):
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    tokenizer.pad_token = tokenizer.eos_token
+    cv_pipe = pipeline(
+        "text-generation",
+        model=model_name,
+        tokenizer=tokenizer,
+        batch_size=8,
+        temperature=0.5,
+        top_p=0.95,
+        return_full_text=False,
+    )
+    return HuggingFacePipeline(pipeline=cv_pipe)
+
+
 def compute_similarity(resume, jd, model):
     emb1 = model.encode(resume, convert_to_tensor=True)
     emb2 = model.encode(jd, convert_to_tensor=True)
@@ -77,21 +92,7 @@ class ResumeJobMatchGenerator:
         self.dbs = [db1, db2, db3, db4]
 
         # LLM for JOB Generation
-        self.generators = []
-        for model_name in llm_model_names:
-            tokenizer = AutoTokenizer.from_pretrained(model_name)
-            tokenizer.pad_token = tokenizer.eos_token
-            cv_pipe = pipeline(
-                "text-generation",
-                model=model_name,
-                batch_size=4,
-                tokenizer=tokenizer,
-                temperature=0.5,
-                top_p=0.95,
-                return_full_text=False
-            )
-            self.generators.append(HuggingFacePipeline(pipeline=cv_pipe))
-
+        self.generators = None
         # BIAS MODELS :)
         bias_model = "maximuspowers/bias-detection-ner"
         tokenizer = AutoTokenizer.from_pretrained(bias_model)
@@ -129,7 +130,8 @@ class ResumeJobMatchGenerator:
                     sims_group = []
                     summarizations = []
                     biases = []
-                    for _, model in enumerate(self.generators):
+                    for _, model_name in enumerate(llm_model_names):
+                        model = load_generator(model_name)
                         # generate job description
                         jd = model.invoke(prompt_jd)
                         job_descriptions.append(jd)
@@ -137,7 +139,8 @@ class ResumeJobMatchGenerator:
                         # classification 3-class
                         cls = []
                         summ = []
-                        for m in self.generators:
+                        for m in llm_model_names:
+                            m = load_generator(m)
                             prompt_cls = prompts.evaluation_template.format_map({"resume": resume,
                                                                                 "job_description": jd})
                             prompt_cls = f"\n{prompt_cls}\nANSWER:\n"
