@@ -16,14 +16,14 @@ torch.set_float32_matmul_precision('high')
 
 llm_model_names = ["tiiuae/Falcon3-1B-Instruct",
                    "meta-llama/Llama-3.2-1B-Instruct",
-                   "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B",
-                   "Qwen/Qwen2.5-1.5B-Instruct",
+                   #    "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B",
+                   #    "Qwen/Qwen2.5-1.5B-Instruct",
                    "google/gemma-3-1b-it",
                    ]
 
 embedding_model_names = [
     "sentence-transformers/all-MiniLM-L6-v2",
-    "intfloat/e5-large-v2",
+    # "intfloat/e5-large-v2",
     "sentence-transformers/all-mpnet-base-v2",
 ]
 embedding_models = {name: SentenceTransformer(
@@ -31,20 +31,22 @@ embedding_models = {name: SentenceTransformer(
 
 
 def compute_similarity(resume, jd, model):
-    emb1 = model.encode(resume, convert_to_tensor=True)
-    emb2 = model.encode(jd, convert_to_tensor=True)
-    emb1 = emb1 / emb1.norm(p=2)
-    emb2 = emb2 / emb2.norm(p=2)
-    return util.cos_sim(emb1, emb2).item()  # cosine similarity/distance :)
+    with torch.no_grad():
+        emb1 = model.encode(resume, convert_to_tensor=True)
+        emb2 = model.encode(jd, convert_to_tensor=True)
+        emb1 = emb1 / emb1.norm(p=2)
+        emb2 = emb2 / emb2.norm(p=2)
+        return util.cos_sim(emb1, emb2).item()  # cosine similarity/distance :)
 
 
 def compute_dcscore_softmax(texts, model, temp=0.1):
-    embeddings = model.encode(texts, convert_to_tensor=True)
-    embeddings = F.normalize(embeddings, p=2, dim=1)
-    sim = embeddings @ embeddings.T
-    sim = sim / temp
-    softmax_mat = F.softmax(sim, dim=1)
-    return softmax_mat.diagonal().mean().item()
+    with torch.no_grad():
+        embeddings = model.encode(texts, convert_to_tensor=True)
+        embeddings = F.normalize(embeddings, p=2, dim=1)
+        sim = embeddings @ embeddings.T
+        sim = sim / temp
+        softmax_mat = F.softmax(sim, dim=1)
+        return softmax_mat.diagonal().mean().item()
 
 
 class ResumeJobMatchGenerator:
@@ -98,6 +100,7 @@ class ResumeJobMatchGenerator:
                 temperature=0.5,
                 top_p=0.95,
                 return_full_text=False,
+                torch_dtype=torch.float16,
                 device=gpu
             )
             self.generators.append(HuggingFacePipeline(pipeline=cv_pipe))
@@ -115,95 +118,97 @@ class ResumeJobMatchGenerator:
         self.bias_models = [bias_model1, bias_model2]
 
     def generate(self):
-        # Generate dataset using the loaded model
-        combined_datasets = {}
-        for idx, db in enumerate(self.dbs):
-            for split, data in db.items():
-                print(f"{idx}/{len(self.db_names)} - {split} - {db}")
-                collected = []
-                resumes = data["resume"]
-                for ii, resume in tqdm(enumerate(resumes),
-                                       desc="- structuring",
-                                       total=len(resumes)
-                                       ):
-                    gen_prompt = np.random.choice(self.gen_templates)
-                    noise_prompt = np.random.choice(self.noise_templates)
-                    format_prompt = np.random.choice(self.fmt_templates)
+        with torch.no_grad():
+            # Generate dataset using the loaded model
+            combined_datasets = {}
+            for idx, db in enumerate(self.dbs):
+                for split, data in db.items():
+                    print(f"{idx}/{len(self.db_names)} - {split} - {db}")
+                    collected = []
+                    resumes = data["resume"]
+                    for ii, resume in tqdm(enumerate(resumes),
+                                           desc="- structuring",
+                                           total=len(resumes)
+                                           ):
+                        gen_prompt = np.random.choice(self.gen_templates)
+                        noise_prompt = np.random.choice(self.noise_templates)
+                        format_prompt = np.random.choice(self.fmt_templates)
 
-                    # pipeline
-                    prompt_jd = f"{gen_prompt}\n{noise_prompt}\n{format_prompt}\nRESUME:\n{resume}ANSWER:\n"
-                    job_descriptions = []
-                    categories = []
-                    sims_group = []
-                    summarizations = []
-                    biases = []
-                    for model in tqdm(self.generators, desc="- model"):
-                        # generate job description
-                        jd = model.invoke(prompt_jd)
-                        job_descriptions.append(jd)
+                        # pipeline
+                        prompt_jd = f"{gen_prompt}\n{noise_prompt}\n{format_prompt}\nRESUME:\n{resume}ANSWER:\n"
+                        job_descriptions = []
+                        categories = []
+                        sims_group = []
+                        summarizations = []
+                        biases = []
+                        for model in tqdm(self.generators, desc="- model"):
+                            # generate job description
+                            jd = model.invoke(prompt_jd)
+                            job_descriptions.append(jd)
 
-                        # classification 3-class and reasoning explainations about resume-job match
-                        cls = []
-                        summ = []
-                        for _ in range(len(self.generators)):
-                            prompt_cls = prompts.evaluation_template.format_map({"resume": resume,
-                                                                                "job_description": jd})
-                            cls.append(f"\n{prompt_cls}\nANSWER:\n")
-                            prompt_summ = prompts.system_evaluator_template.format_map({"resume": resume,
-                                                                                        "job_description": jd})
-                            summ.append(f"\n{prompt_summ}\nANSWER:\n")
+                            # classification 3-class and reasoning explainations about resume-job match
+                            cls = []
+                            summ = []
+                            for _ in range(len(self.generators)):
+                                prompt_cls = prompts.evaluation_template.format_map({"resume": resume,
+                                                                                    "job_description": jd})
+                                cls.append(f"\n{prompt_cls}\nANSWER:\n")
+                                prompt_summ = prompts.system_evaluator_template.format_map({"resume": resume,
+                                                                                            "job_description": jd})
+                                summ.append(f"\n{prompt_summ}\nANSWER:\n")
 
-                        for m in tqdm(self.generators, desc="- metrics"):
-                            categories.append(m.invoke(cls))
-                            summarizations.append(m.invoke(summ))
+                            for m in tqdm(self.generators, desc="- metrics"):
+                                categories.append(m.invoke(cls))
+                                summarizations.append(m.invoke(summ))
 
-                        # Compute biases
-                        biases.append([m(jd) for m in self.bias_models])
+                            # Compute biases
+                            biases.append([m(jd) for m in self.bias_models])
 
-                        # metrics (compute_similarity) about the resume and job description
-                        sims = {name: compute_similarity(
-                            resume, jd, m) for name, m in embedding_models.items()}
-                        sims_group.append(sims)
+                            # metrics (compute_similarity) about the resume and job description
+                            sims = {name: compute_similarity(
+                                resume, jd, m) for name, m in embedding_models.items()}
+                            sims_group.append(sims)
 
-                    # More Metrics
-                    dcscore = compute_dcscore_softmax(job_descriptions,
-                                                      embedding_models["intfloat/e5-large-v2"]
-                                                      )
-                    ngram_score = ngram_diversity_score(job_descriptions)
-                    compress_ratio = compression_ratio(job_descriptions)
-                    homogenization_rouge = homogenization_score(job_descriptions,
-                                                                'rougel')
+                        print()
+                        # More Metrics
+                        dcscore = compute_dcscore_softmax(job_descriptions,
+                                                          embedding_models["sentence-transformers/all-mpnet-base-v2"]
+                                                          )
+                        ngram_score = ngram_diversity_score(job_descriptions)
+                        compress_ratio = compression_ratio(job_descriptions)
+                        homogenization_rouge = homogenization_score(job_descriptions,
+                                                                    'rougel')
 
-                    homogenization_bertscore = homogenization_score(job_descriptions,
-                                                                    'bertscore')
+                        homogenization_bertscore = homogenization_score(job_descriptions,
+                                                                        'bertscore')
 
-                    obj = {
-                        "resume": resume,
-                        "job_description": job_descriptions,
-                        "relevance_label": categories,
-                        "explanation": summarizations,
-                        "semantic_similarity": sims_group,
-                        "biases": biases,
-                        "dcscore": dcscore,
-                        "ngram_score": ngram_score,
-                        "homogenization_rouge": homogenization_rouge,
-                        "homogenization_bertscore": homogenization_bertscore,
-                        "compress_ratio": compress_ratio,
-                        "db_name": self.db_names[idx],
-                        "split": split,
-                    }
-                    np.save(f"db/collected_{idx}_{split}_{ii}.npy", obj)
-                    collected.append(obj)
-                ds_split = Dataset.from_list(collected)
-                if split in combined_datasets:
-                    combined_datasets[f"{idx}_{split}"] = concatenate_datasets([combined_datasets[f"{idx}_{split}"],
-                                                                                ds_split])
-                else:
-                    combined_datasets[f"{idx}_{split}"] = ds_split
-                np.save(f"collected_{idx}_{split}.npy", collected)
-        final_dataset = DatasetDict(combined_datasets)
-        final_dataset.save_to_disk("resume-job-match")
-        print("\n\nDataset Completed!!\n\n")
+                        obj = {
+                            "resume": resume,
+                            "job_description": job_descriptions,
+                            "relevance_label": categories,
+                            "explanation": summarizations,
+                            "semantic_similarity": sims_group,
+                            "biases": biases,
+                            "dcscore": dcscore,
+                            "ngram_score": ngram_score,
+                            "homogenization_rouge": homogenization_rouge,
+                            "homogenization_bertscore": homogenization_bertscore,
+                            "compress_ratio": compress_ratio,
+                            "db_name": self.db_names[idx],
+                            "split": split,
+                        }
+                        np.save(f"db/collected_{idx}_{split}_{ii}.npy", obj)
+                        collected.append(obj)
+                    ds_split = Dataset.from_list(collected)
+                    if split in combined_datasets:
+                        combined_datasets[f"{idx}_{split}"] = concatenate_datasets([combined_datasets[f"{idx}_{split}"],
+                                                                                    ds_split])
+                    else:
+                        combined_datasets[f"{idx}_{split}"] = ds_split
+                    np.save(f"collected_{idx}_{split}.npy", collected)
+            final_dataset = DatasetDict(combined_datasets)
+            final_dataset.save_to_disk("resume-job-match")
+            print("\n\nDataset Completed!!\n\n")
 
 
 if __name__ == "__main__":
