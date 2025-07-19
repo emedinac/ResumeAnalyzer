@@ -78,7 +78,7 @@ class ResumeJobMatchGenerator:
 
         # LLM for JOB Generation
         self.generators = []
-        for model_name, gpu in zip(llm_model_names, [0, 0, 1, 1, 1]):
+        for model_name, gpu in zip(llm_model_names, [0, 0, 0, 0, 0]):
             tokenizer = AutoTokenizer.from_pretrained(model_name)
             tokenizer.pad_token = tokenizer.eos_token
             print(gpu, model_name)
