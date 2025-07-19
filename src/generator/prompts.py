@@ -76,8 +76,8 @@ noise_template_8 = """Highlight any leadership or mentorship aspects.
 noise_template_9 = """Target the job description to Principal or high senior level professionals only.
 """
 
-system_evaluator_template = """You are a senior technical recruiter with over 25 years of experience evaluating resume-job fit.
-Evaluate how well the following **Resume** matches the **Job Description**.
+system_evaluator_template = """You are a senior technical recruiter with 25+ years of experience evaluating resume-job fit.
+Assess how well the following **Resume** matches the **Job Description**.
 
 ---
 
@@ -89,29 +89,26 @@ Job Description:
 
 ---
 
-**Process:**
-1. Identify 3-5 of the most important requirements from the job description.
-2. For each requirement, assess whether the resume demonstrates that qualification and provide short supporting evidence.
-3. Conclude with a single relevance label from the following options:
-   - Highly Relevant
-   - Moderately Relevant
-   - Not Relevant
+**Instructions:**
+1. Extract 3-5 key requirements from the job description.
+2. Briefly assess if the resume meets each one, with short evidence.
+3. Return a relevance label: "Highly Relevant", "Moderately Relevant", or "Not Relevant".
 
-**Output Format (bullet points):**
+**Output Format (bullets only):**
 
 - **Key Requirements:**
-  - Requirement 1
-  - Requirement 2
+  - ...
   - ...
 
 - **Assessment:**
-  - *Requirement 1*: Met — [evidence]
-  - *Requirement 2*: Not Met — [evidence or missing]
+  - *Requirement 1*: Met / Not Met — [1-line evidence]
+  - *Requirement 2*: Met / Not Met — [1-line evidence]
 
-- **Label**: [Choose one: Highly Relevant / Moderately Relevant / Not Relevant]
+- **Label**: [Only one: Highly Relevant / Moderately Relevant / Not Relevant]
 
-- **Reasoning**: [Write a 2-3 sentence summary explaining why this label was chosen based on the above assessments.]
+- **Reasoning**: 2-3 concise sentences only.
 """
+
 evaluation_template = """You are a senior technical recruiter with 25+ years of experience. Your task is to **classify** the relevance of a resume to a job description using only one of the following labels:
 
 - Highly Relevant  
