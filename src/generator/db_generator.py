@@ -201,7 +201,8 @@ class ResumeJobMatchGenerator:
                             "db_name": self.db_names[idx],
                             "split": split,
                         }
-                        np.save(f"db/collected_{idx}_{split}_{ii}.npy", obj)
+                        np.save(
+                            f"db/collected_{idx:05d}_{split}_{ii:05d}.npy", obj)
                         collected.append(obj)
                     ds_split = Dataset.from_list(collected)
                     if split in combined_datasets:
