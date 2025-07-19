@@ -15,7 +15,7 @@ import torch.nn.functional as F
 llm_model_names = ["meta-llama/Meta-Llama-3-8B-Instruct",
                    "meta-llama/Llama-3.2-1B-Instruct",
                    "deepseek-ai/DeepSeek-R1-Distill-Llama-8B",
-                   "mradermacher/Grok_HumanLike_Llama-3.2-3B-Instruct-GGUF"
+                   #    "mradermacher/Grok_HumanLike_Llama-3.2-3B-Instruct-GGUF"
                    "Qwen/Qwen2-7B-Instruct",
                    "google/gemma-7b",
                    ]
