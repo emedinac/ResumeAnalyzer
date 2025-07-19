@@ -12,12 +12,11 @@ from diversity import compression_ratio, ngram_diversity_score, homogenization_s
 import torch
 import torch.nn.functional as F
 
-llm_model_names = ["tiiuae/Falcon3-1B-Instruct",
+llm_model_names = ["meta-llama/Meta-Llama-3-8B-Instruct",
                    "meta-llama/Llama-3.2-1B-Instruct",
-                   "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B",
-                   #    "mradermacher/Grok_HumanLike_Llama-3.2-3B-Instruct-GGUF"
-                   "Qwen/Qwen2.5-1.5B-Instruct",
-                   "google/gemma-2b-it",
+                   "deepseek-ai/DeepSeek-R1-Distill-Llama-8B",
+                   "Qwen/Qwen2-7B-Instruct",
+                   "google/gemma-7b",
                    ]
 
 embedding_model_names = [
@@ -86,7 +85,7 @@ class ResumeJobMatchGenerator:
                 "text-generation",
                 model=model_name,
                 tokenizer=tokenizer,
-                batch_size=8,
+                batch_size=1,
                 temperature=0.5,
                 top_p=0.95,
                 return_full_text=False,
@@ -116,75 +115,66 @@ class ResumeJobMatchGenerator:
             for split, data in db.items():
                 print(f"{idx}/{len(self.db_names)} - {split} - {db}")
                 collected = []
-                jds_prompts = []
-                gen_prompts = []
-                noise_prompts = []
-                format_prompts = []
                 for resume in tqdm(data["resume"], desc="- structuring"):
                     gen_prompt = np.random.choice(gen_templates)
-                    gen_prompts.append(getattr(prompts, gen_prompt))
+                    gen_prompt = getattr(prompts, gen_prompt)
                     noise_prompt = np.random.choice(noise_templates)
-                    noise_prompts.append(getattr(prompts, noise_prompt))
+                    noise_prompt = getattr(prompts, noise_prompt)
                     format_prompt = np.random.choice(format_templates)
-                    format_prompts.append(getattr(prompts, format_prompt))
+                    format_prompt = getattr(prompts, format_prompt)
+
                     # pipeline
-                    jds_prompts.append(
-                        f"{gen_prompts[-1]}\n{noise_prompts[-1]}\n{format_prompts[-1]}\nRESUME:\n{resume}ANSWER:\n")
+                    prompt_jd = f"{gen_prompt}\n{noise_prompt}\n{format_prompt}\nRESUME:\n{resume}ANSWER:\n"
+                    job_descriptions = []
+                    categories = []
+                    sims_group = []
+                    summarizations = []
+                    biases = []
+                    for _, model in tqdm(self.generators, desc="- model"):
+                        # generate job description
+                        jd = model.invoke(prompt_jd)
+                        job_descriptions.append(jd)
 
-                # generate job description
-                job_descriptions = []
-                for model in tqdm(self.generators, desc="- model:"):
-                    for jd in tqdm(jds_prompts, desc="- m(jobs)"):
-                        job_descriptions.append(model.invoke(jd))
+                        # classification 3-class
+                        cls = []
+                        summ = []
+                        for m in tqdm(self.generators, desc="- metrics"):
+                            prompt_cls = prompts.evaluation_template.format_map({"resume": resume,
+                                                                                "job_description": jd})
+                            prompt_cls = f"\n{prompt_cls}\nANSWER:\n"
+                            cls.append(m.invoke(prompt_cls))
 
-                categories = []
-                sims_group = []
-                summarizations = []
-                biases = []
-                for jds in tqdm(job_descriptions, desc="- metrics"):
-                    # classification 3-class
-                    cls = []
-                    summ = []
-                    metrics_prompts1 = []
-                    metrics_prompts2 = []
-                    for jd in jds:
-                        # reasoning explainations about resume-job match
-                        prompt_cls = prompts.evaluation_template.format_map({"resume": resume,
-                                                                            "job_description": jd})
-                        prompt_cls = f"\n{prompt_cls}\nANSWER:\n"
-                        metrics_prompts1.append(prompt_cls)
-                        prompt_summ = prompts.system_evaluator_template.format_map({"resume": resume,
-                                                                                    "job_description": jd})
-                        prompt_summ = f"\n{prompt_summ}\nANSWER:\n"
-                        metrics_prompts2.append(prompt_summ)
-                    for m in self.generators:
-                        cls.append(m.invoke(metrics_prompts1))
-                        summ.append(m.invoke(metrics_prompts2))
+                            # reasoning explainations about resume-job match
+                            prompt_summ = prompts.system_evaluator_template.format_map({"resume": resume,
+                                                                                        "job_description": jd})
+                            prompt_summ = f"\n{prompt_summ}\nANSWER:\n"
+                            summ.append(m.invoke(prompt_summ))
+                        categories.append(cls)
+                        summarizations.append(summ)
 
-                    categories.append(cls)
-                    summarizations.append(summ)
+                        # Compute biases
+                        biases.append([m(jd) for m in self.bias_models])
 
-                    # Compute biases
-                    # metrics (compute_similarity) about the resume and job description
-                    biases.append([m(jd) for m in self.bias_models])
-                    sims = {name: compute_similarity(
-                        resume, jd, m) for name, m in embedding_models.items()}
-                    sims_group.append(sims)
+                        # metrics (compute_similarity) about the resume and job description
+                        sims = {name: compute_similarity(
+                            resume, jd, m) for name, m in embedding_models.items()}
+                        sims_group.append(sims)
 
-                    dcscore = compute_dcscore_softmax(jds,
+                    # More Metrics
+                    dcscore = compute_dcscore_softmax(job_descriptions,
                                                       embedding_models["intfloat/e5-large-v2"]
                                                       )
-                    ngram_score = ngram_diversity_score(jds)
-                    compress_ratio = compression_ratio(jds)
-                    homogenization_rouge = homogenization_score(jds,
+                    ngram_score = ngram_diversity_score(job_descriptions)
+                    compress_ratio = compression_ratio(job_descriptions)
+                    homogenization_rouge = homogenization_score(job_descriptions,
                                                                 'rougel')
 
-                    homogenization_bertscore = homogenization_score(jds,
+                    homogenization_bertscore = homogenization_score(job_descriptions,
                                                                     'bertscore')
 
                     collected.append({
                         "resume": resume,
-                        "job_description": jds,
+                        "job_description": job_descriptions,
                         "relevance_label": categories,
                         "explanation": summarizations,
                         "semantic_similarity": sims_group,
@@ -194,9 +184,6 @@ class ResumeJobMatchGenerator:
                         "homogenization_rouge": homogenization_rouge,
                         "homogenization_bertscore": homogenization_bertscore,
                         "compress_ratio": compress_ratio,
-                        "gen_prompts": gen_prompts,
-                        "noise_prompts": noise_prompts,
-                        "format_prompts": format_prompts,
                         "db_name": self.db_names[idx],
                         "split": split,
                     })
