@@ -145,7 +145,7 @@ class ResumeJobMatchGenerator:
                         # classification 3-class and reasoning explainations about resume-job match
                         cls = []
                         summ = []
-                        for m in tqdm(self.generators, desc="- prompts"):
+                        for _ in range(len(self.generators)):
                             prompt_cls = prompts.evaluation_template.format_map({"resume": resume,
                                                                                 "job_description": jd})
                             cls.append(f"\n{prompt_cls}\nANSWER:\n")
@@ -154,8 +154,8 @@ class ResumeJobMatchGenerator:
                             summ.append(f"\n{prompt_summ}\nANSWER:\n")
 
                         for m in tqdm(self.generators, desc="- metrics"):
-                            categories.append(m.invoke(cls))
-                            summarizations.append(m.invoke(summ))
+                            categories.append(m.ainvoke(cls))
+                            summarizations.append(m.ainvoke(summ))
 
                         # Compute biases
                         biases.append([m(jd) for m in self.bias_models])
