@@ -133,9 +133,9 @@ class ResumeJobMatchGenerator:
 
                 # generate job description
                 job_descriptions = []
-                for model in tqdm(self.generators, desc="- jobs"):
-                    jds = model.invoke(jds_prompts)
-                    job_descriptions.append(jds)
+                for model in tqdm(self.generators, desc="- model:"):
+                    for jd in tqdm(jds_prompts, desc="- m(jobs)"):
+                        job_descriptions.append(model.invoke(jd))
 
                 categories = []
                 sims_group = []
@@ -194,6 +194,9 @@ class ResumeJobMatchGenerator:
                         "homogenization_rouge": homogenization_rouge,
                         "homogenization_bertscore": homogenization_bertscore,
                         "compress_ratio": compress_ratio,
+                        "gen_prompts": gen_prompts,
+                        "noise_prompts": noise_prompts,
+                        "format_prompts": format_prompts,
                         "db_name": self.db_names[idx],
                         "split": split,
                     })
