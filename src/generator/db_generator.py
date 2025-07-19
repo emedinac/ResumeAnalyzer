@@ -69,8 +69,9 @@ class ResumeJobMatchGenerator:
 
         # LLM for JOB Generation
         model_name = "meta-llama/Meta-Llama-3-8B-Instruct"
-        model_name = "meta-llama/Llama-3.2-1B-Instruct"
+        # model_name = "meta-llama/Llama-3.2-1B-Instruct"
         tokenizer = AutoTokenizer.from_pretrained(model_name)
+        tokenizer.pad_token = tokenizer.eos_token
         cv_pipe = pipeline(
             "text-generation",
             batch_size=32,
@@ -84,6 +85,7 @@ class ResumeJobMatchGenerator:
 
         model_name = "meta-llama/Llama-4-Scout-17B-16E-Instruct"
         tokenizer = AutoTokenizer.from_pretrained(model_name)
+        tokenizer.pad_token = tokenizer.eos_token
         cv_pipe = pipeline(
             "text-generation",
             model=model_name,
@@ -97,6 +99,7 @@ class ResumeJobMatchGenerator:
 
         model_name = "deepseek-ai/DeepSeek-R1-Distill-Llama-8B"
         tokenizer = AutoTokenizer.from_pretrained(model_name)
+        tokenizer.pad_token = tokenizer.eos_token
         cv_pipe = pipeline(
             "text-generation",
             model=model_name,
@@ -110,6 +113,7 @@ class ResumeJobMatchGenerator:
 
         model_name = "xai-org/grok-3-8b-instruct"
         tokenizer = AutoTokenizer.from_pretrained(model_name)
+        tokenizer.pad_token = tokenizer.eos_token
         cv_pipe = pipeline(
             "text-generation",
             model=model_name,
@@ -123,6 +127,7 @@ class ResumeJobMatchGenerator:
 
         model_name = "google/flan-t5-large"
         tokenizer = AutoTokenizer.from_pretrained(model_name)
+        tokenizer.pad_token = tokenizer.eos_token
         cv_pipe = pipeline(
             "text-generation",
             model=model_name,
