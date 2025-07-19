@@ -4,7 +4,7 @@
 from transformers import AutoTokenizer, AutoModelForTokenClassification, pipeline
 from datasets import load_dataset, Dataset, concatenate_datasets, DatasetDict
 from langchain_huggingface import HuggingFacePipeline
-from . import prompts
+import prompts
 import numpy as np
 from tqdm import tqdm
 from sentence_transformers import SentenceTransformer, util
