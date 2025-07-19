@@ -4,7 +4,7 @@
 from transformers import AutoTokenizer, AutoModelForTokenClassification, pipeline
 from datasets import load_dataset, Dataset, concatenate_datasets, DatasetDict
 from langchain_huggingface import HuggingFacePipeline
-import prompts
+from . import prompts
 import numpy as np
 from tqdm import tqdm
 from sentence_transformers import SentenceTransformer, util
@@ -22,7 +22,7 @@ llm_model_names = ["tiiuae/Falcon3-1B-Instruct",
                    ]
 
 embedding_model_names = [
-    "sentence-transformers/all-MiniLM-L6-v2",
+    # "sentence-transformers/all-MiniLM-L6-v2",
     # "intfloat/e5-large-v2",
     "sentence-transformers/all-mpnet-base-v2",
 ]
@@ -99,6 +99,7 @@ class ResumeJobMatchGenerator:
                 batch_size=8,
                 temperature=0.5,
                 top_p=0.95,
+                max_new_tokens=1024,
                 return_full_text=False,
                 torch_dtype=torch.float16,
                 device=gpu
@@ -194,6 +195,9 @@ class ResumeJobMatchGenerator:
                             "homogenization_rouge": homogenization_rouge,
                             "homogenization_bertscore": homogenization_bertscore,
                             "compress_ratio": compress_ratio,
+                            "gen_prompt": gen_prompt,
+                            "noise_prompt": noise_prompt,
+                            "format_prompt": format_prompt,
                             "db_name": self.db_names[idx],
                             "split": split,
                         }

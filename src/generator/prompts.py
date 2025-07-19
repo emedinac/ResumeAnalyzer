@@ -111,5 +111,5 @@ Resume:
 Job Description:
 {job_description}
 
-Relevance (choose one): Highly Relevant, Moderately Relevant, Not Relevant
+Relevance class (choose one): "Highly Relevant", "Moderately Relevant", "Not Relevant". no more information just the Relevance class.
 """
