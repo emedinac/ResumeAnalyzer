@@ -12,11 +12,11 @@ from diversity import compression_ratio, ngram_diversity_score, homogenization_s
 import torch
 import torch.nn.functional as F
 
-llm_model_names = ["meta-llama/Meta-Llama-3-8B-Instruct",
+llm_model_names = ["tiiuae/Falcon3-1B-Instruct",
                    "meta-llama/Llama-3.2-1B-Instruct",
-                   "deepseek-ai/DeepSeek-R1-Distill-Llama-8B",
-                   "Qwen/Qwen2-7B-Instruct",
-                   "google/gemma-7b",
+                   "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B",
+                   "Qwen/Qwen2.5-1.5B-Instruct",
+                   "google/gemma-3-1b-it",
                    ]
 
 embedding_model_names = [
