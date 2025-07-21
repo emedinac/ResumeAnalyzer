@@ -1,5 +1,5 @@
 from transformers import AutoTokenizer
-from datasets import load_dataset
+from datasets import load_dataset, concatenate_datasets
 from langchain_community.vectorstores import FAISS
 from langchain_chroma import Chroma
 from langchain_huggingface import HuggingFaceEmbeddings
@@ -17,41 +17,18 @@ import re
 
 
 def normalize_resume_text(text):
-    # adding some heuristics with Regex. for some manual inspections.
-    # https://regex101.com/
-    # 1. capitalized word following lowercase or punctuation
-    text = re.sub(r'(?<=[a-z.,])(?=(?:[A-Z][a-z]{2,}|[A-Z]{3,}))', ' ', text)
-
-    # 3. Normalize phone numbers with spaced digits and dashes
-    text = re.sub(
-        r'(?<=\(\d{3}\))([\s\d-]{4,20})',
-        lambda m: re.sub(r'\s+', '', m.group()),
-        text
-    )
-
-    # 4. phone numbers and email addresses
-    text = re.sub(r'(?<=[a-zA-Z])(?=\d)', ' ', text)
-    text = re.sub(r'(?<=\d)(?=[a-zA-Z])', ' ', text)
-
-    # 5. dates like 01/2025
-    text = re.sub(
-        r'(?<=[0-9]{2}/[0-9]{4})(?=[A-Z])',
-        ' ',
-        text
-    )
-
     return text
 
 
 class BaseResumeLoader:
     """Base Loader class to load the resume-job-description-fit dataset"""
 
-    def __init__(self, path_to_dataset="cnamuangtoun/resume-job-description-fit",
+    def __init__(self, split="train",
                  batch_size=256,
                  model_name="sentence-transformers/all-mpnet-base-v2",
                  ):
         # Another one interesting: d4rk3r/resumes-raw-pdf
-        self.path_to_dataset = path_to_dataset
+        self.split = split
         self.model_name = model_name
         self.batch_size = batch_size
 
@@ -64,9 +41,21 @@ class BaseResumeLoader:
                            "batch_size": self.batch_size, },
             # multi_process=True,
         )
-        self.dataset = load_dataset(self.path_to_dataset,
-                                    keep_in_memory=keep_in_memory
-                                    )
+        db1 = load_dataset("ahmedheakl/resume-atlas",
+                           keep_in_memory=keep_in_memory,
+                           split=self.split)
+        db2 = load_dataset("Lakshmi12/Resume_Dataset",
+                           keep_in_memory=keep_in_memory,
+                           split=self.split)
+        db1 = db1.rename_columns({
+            "Text": "Resume",
+        })
+        db2 = db2.rename_columns({
+            "Resume_str": "Resume",
+        })
+        db1 = db1.select_columns(["Resume", "Category"])
+        db2 = db2.select_columns(["Resume", "Category"])
+        self.dataset = concatenate_datasets([db1, db2])
         self.split = None
         self.fields = None
         # https://www.rohan-paul.com/p/document-digitization-and-chunking
@@ -91,11 +80,11 @@ class BaseResumeLoader:
         # Compute embeddings without chunks
         self.split = split
         self.db_chunks = {}
-        self.fields = list(self.dataset[split].features.keys())
+        self.fields = list(self.dataset.features.keys())
         for field in self.fields:
-            if "label" == field:
+            if "Category" == field:
                 continue
-            samples = self.dataset[split][field]  # [:2]  # for tests
+            samples = self.dataset[field]  # [:2]  # for tests
             # chunks = self.chunker.create_documents(samples,)
             # This implementation is more accurate and got better performance:
             docs: list[Document] = []
@@ -115,16 +104,17 @@ class BaseResumeLoader:
                                       "chunk_index": str(idx),
                                       }
                 docs.extend(chunks)
+                break
             print(f"Total chunks: {len(docs)}")
             self.db_chunks[field] = docs
 
 
 class ResumeLoaderFAISS(BaseResumeLoader):
     def __init__(self,
-                 path_to_dataset="cnamuangtoun/resume-job-description-fit",
+                 split="train",
                  batch_size=256,
                  model_name="sentence-transformers/all-mpnet-base-v2"):
-        super().__init__(path_to_dataset, batch_size, model_name)
+        super().__init__(split, batch_size, model_name)
         self.vectors = {}
 
     def build_vectorstore(self):
@@ -150,11 +140,11 @@ class ResumeLoaderFAISS(BaseResumeLoader):
 
 class ResumeLoaderChroma(BaseResumeLoader):
     def __init__(self,
-                 path_to_dataset="cnamuangtoun/resume-job-description-fit",
+                 split="train",
                  batch_size=256,
                  model_name="sentence-transformers/all-mpnet-base-v2",
                  keep_in_memory=True):
-        super().__init__(path_to_dataset, batch_size, model_name)
+        super().__init__(split, batch_size, model_name)
         super().setup(keep_in_memory)
         self.vectors = None
 
