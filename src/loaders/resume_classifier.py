@@ -104,7 +104,6 @@ class BaseResumeLoader:
                                       "chunk_index": str(idx),
                                       }
                 docs.extend(chunks)
-                break
             print(f"Total chunks: {len(docs)}")
             self.db_chunks[field] = docs
 
