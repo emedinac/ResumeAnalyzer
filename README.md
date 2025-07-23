@@ -21,8 +21,8 @@ Specifically, Added:
 - [X] Load LLMs pipeline
 - [X] Simple RAG pipeline implementation
 - [X] Adding Analyzer and Judge LLMs (summary evaluation and score)
-- [X] Task 1: job description with Resume database
-- [ ] Task 2: A new Resume entry vs the job description
+- [X] Task 1: Given a job description find a "good match" Resume in a database
+- [ ] Task 2: Set a score to a new Resume entry vs a job description
 - [ ] Task 3: A new Resume entry with job description database
 - [ ] Adding Metrics
 - [ ] Visual Interface
@@ -47,4 +47,18 @@ Important note for FAISS (GPU): [issue with numpy](https://github.com/facebookre
 huggingface-cli login
 ```
 
-The database `cnamuangtoun/resume-job-description-fit` contains labels for the following classes: `No Fit`, `Potential Fit`, `Good Fit`.
+To compute embeddings from the database `ahmedheakl/resume-atlas` and `Lakshmi12/Resume_Dataset` or job description dataset, run variation of the following commands:
+
+```bash
+CUDA_VISIBLE_DEVICES=0 python src/loaders/resume_classifier.py --model "intfloat/e5-large-v2" --output_path "embeddings/embeddingsE5Large" --split "train"
+
+CUDA_VISIBLE_DEVICES=1 python src/loaders/resume_classifier.py --model "sentence-transformers/all-MiniLM-L6-v2" --output_path "embeddings/embeddingsMini" --split "train"
+
+CUDA_VISIBLE_DEVICES=0 python src/loaders/resume_jobs.py --model "intfloat/e5-large-v2" --output_path "embeddings/resume_jobs/embeddingsE5Large" --split "train"
+```
+
+Some classes that are contained in the dataset (cleaned) labels including the following:
+
+```bash
+ACCOUNTANT, ADVOCATE, AGRICULTURE, APPAREL, ARCHITECTURE, ARTS, AUTOMOBILE, AVIATION, BANKING, BLOCKCHAIN, Business Process Outsourcing, BUILDING AND CONSTRUCTION, BUSINESS ANALYST, BUSINESS DEVELOPMENT, CHEF, CIVIL ENGINEER, CONSTRUCTION, CONSULTANT, DATA SCIENCE, DATABASE, DESIGNER, DESIGNING, DEVOPS, DIGITAL MEDIA, DOTNET DEVELOPER, EDUCATION, ELECTRICAL ENGINEERING, ENGINEERING, ETL DEVELOPER, FINANCE, FITNESS, FOOD AND BEVERAGES, HEALTH AND FITNESS, HEALTHCARE, HUMAN RESOURCES, INFORMATION TECHNOLOGY, JAVA DEVELOPER, MANAGEMENT, MECHANICAL ENGINEER, NETWORK SECURITY ENGINEER, OPERATIONS MANAGER, Project Management Office, PUBLIC RELATIONS, PYTHON DEVELOPER, REACT DEVELOPER, SALES, SAP DEVELOPER, SQL DEVELOPER, TEACHER, TESTING, WEB DESIGNING
+```

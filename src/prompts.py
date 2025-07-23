@@ -1,86 +1,105 @@
 # context is the job description
 # question is the CV Resume
 
-evaluation_template = """
-job description:
-{job_description}
+evaluation_template = """You are an evaluation assistant tasked with reviewing the output from a CV analysis model.
 
-Previous compupation - resume with preliminar evaluation (score) sometimes include a short summary (summary):
-{resume}
+Here is the candidate's CV:
+{context}
 
-Based on the resume and job description, classify the fit level using one of:
-1. "No Fit"
-2. "Potential Fit"
-3. "Good Fit"
-don't include explanations in your answer, no summary, nothing except the fit class below.
-Respond with only one of: "No Fit", "Potential Fit", or "Good Fit"
+Target job role:
+{role}
 
-Answer: 
+Here is the model's evaluation:
+SCORE: {score}
+SUMMARY: {summary}
+POTENTIAL_FIT_AREAS: {fit_areas}
+
+Your task is to assess the accuracy and validity of the model's evaluation.
+
+Evaluate the following:
+
+1. Is the SCORE appropriate based on the content of the CV and relevance to the target role?
+2. Does the SUMMARY accurately reflect the candidate's experience, and is it clearly supported by the CV?
+3. Are the suggested POTENTIAL_FIT_AREAS logical and supported by evidence in the CV? the possible areas to match are (no others): ACCOUNTANT, ADVOCATE, AGRICULTURE, APPAREL, ARCHITECTURE, ARTS, AUTOMOBILE, AVIATION, BANKING, BLOCKCHAIN, Business Process Outsourcing, BUILDING AND CONSTRUCTION, BUSINESS ANALYST, BUSINESS DEVELOPMENT, CHEF, CIVIL ENGINEER, CONSTRUCTION, CONSULTANT, DATA SCIENCE, DATABASE, DESIGNER, DESIGNING, DEVOPS, DIGITAL MEDIA, DOTNET DEVELOPER, EDUCATION, ELECTRICAL ENGINEERING, ENGINEERING, ETL DEVELOPER, FINANCE, FITNESS, FOOD AND BEVERAGES, HEALTH AND FITNESS, HEALTHCARE, HUMAN RESOURCES, INFORMATION TECHNOLOGY, JAVA DEVELOPER, MANAGEMENT, MECHANICAL ENGINEER, NETWORK SECURITY ENGINEER, OPERATIONS MANAGER, Project Management Office, PUBLIC RELATIONS, PYTHON DEVELOPER, REACT DEVELOPER, SALES, SAP DEVELOPER, SQL DEVELOPER, TEACHER, TESTING, WEB DESIGNING
+
+Provide your evaluation strictly in the following format:
+
+- VALID_SCORE: Yes or No
+- VALID_SUMMARY: Yes or No
+- VALID_POTENTIAL_FIT_AREAS: Yes or No
+- RECOMMENDED_CLASS: <Select the single most relevant category from POTENTIAL_FIT_AREAS that best matches the target role>
+- ERRORS_OR_INCONSISTENCIES: <brief explanation if any issues are found, otherwise "None">
+- RECOMMENDED_SCORE (optional): <Only include if you believe the score should be different, else leave blank>
+
+Do not include any other fields. Do not explain your reasoning beyond what is asked above.
+
+ANSWER:
 """
 
-system_template = """
-You are a thorough and structured assistant for CV evaluations. 
-Answer the user's query based on the "job description" below.
+
+system_template = """You are a thorough and structured assistant for CV evaluations. 
+Answer the user's query based on the "query" below.
 If you cannot answer the question using the provided information answer with "I don't know. I need more information".
 """
 
-cv_question1 = """
-Given this Job Description:
+extraction_template = """Given the following job title or role description:
+
 {context}
 
-Given this Candidate CV:
-{input}
+Return a concise list of the most relevant keywords, tools, frameworks, or core skills typically associated with this role.
 
-Evaluate the following extracted CV based on:
-- Skill match 
-- Relevant years of experience
-- Key achievements
-- Educational level
-Return a concrete value score (SCORE: ) between 0-100 and a brief summary (SUMMARY: ) explaining the score for this applicant.
-Answer:
+Follow these rules:
+- Output a single, comma-separated list.
+- Use only one word or a short phrase per item (max 3 words).
+- No duplicate or overly similar items (e.g., only one version of that word).
+- Limit to the top **10 distinct and essential** items only.
+- Avoid overly generic or vague terms (e.g., "skills", "tools", "tech").
+- Do not categorize or explain anything.
+- Only output the list. Nothing else.
+
+ANSWER:
 """
 
-cv_question2 = """
-Given this Job Description:
-{context}
+cv_question1 = """EVALUATION TASK: You are evaluating a candidate's CV for potential fit into predefined job categories.
 
-Given this Candidate CV:
-{input}
+ROLE TITLE: {role}
 
-Return a concrete value score (SCORE: ) between 0-100 and a brief summary (SUMMARY: ) explaining the score for this applicant.
-Answer:
-"""
+--------
 
-cv_question3 = """
-Given this Job Description:
-{context}
+CANDIDATE CV: {context}
 
-Given this Candidate CV:
-{input}
+--------
 
-Return a concrete value score (SCORE: ) between 0-100 for this applicant.
-Answer:
-"""
+YOUR TASK:
 
-cv_question4 = """
-Given this Job Description:
-{context}
+- Analyze the candidate's experience, skills, and qualifications from the CV.
+- Choose the ONE BEST-FIT category from the following list that most accurately reflects the candidate's primary field or expertise:
 
-Given this Candidate CV:
-{input}
+ACCOUNTANT, ADVOCATE, AGRICULTURE, APPAREL, ARCHITECTURE, ARTS, AUTOMOBILE, AVIATION, BANKING, BLOCKCHAIN, Business Process Outsourcing, BUILDING AND CONSTRUCTION, BUSINESS ANALYST, BUSINESS DEVELOPMENT, CHEF, CIVIL ENGINEER, CONSTRUCTION, CONSULTANT, DATA SCIENCE, DATABASE, DESIGNER, DESIGNING, DEVOPS, DIGITAL MEDIA, DOTNET DEVELOPER, EDUCATION, ELECTRICAL ENGINEERING, ENGINEERING, ETL DEVELOPER, FINANCE, FITNESS, FOOD AND BEVERAGES, HEALTH AND FITNESS, HEALTHCARE, HUMAN RESOURCES, INFORMATION TECHNOLOGY, JAVA DEVELOPER, MANAGEMENT, MECHANICAL ENGINEER, NETWORK SECURITY ENGINEER, OPERATIONS MANAGER, Project Management Office, PUBLIC RELATIONS, PYTHON DEVELOPER, REACT DEVELOPER, SALES, SAP DEVELOPER, SQL DEVELOPER, TEACHER, TESTING, WEB DESIGNING
 
-Return a concrete value score (SCORE: ) (0-100) for this applicant.
-Answer:
-"""
+- You MUST select only one (1) category from the above list that is most applicable.
+- If no clear match exists, return: []
 
+SCORE:
+- Provide a number from 0 to 100 indicating how well the candidate fits the specific ROLE TITLE.
+- Use a strict and conservative scoring approach:
+    - 90-100: Candidate is an **exceptional match** with strong evidence across multiple relevant experiences.
+    - 70-89: Candidate is a **good match** but may lack full alignment or depth.
+    - 50-69: Candidate is a **partial match**, with limited or tangential relevance.
+    - Below 50: Candidate is **not a match** or lacks sufficient information for evaluation.
 
-cv_question5 = """
-Given this Job Description:
-{context}
+Then, provide:
+- SCORE: A number from 0 to 100  
+- POTENTIAL_FIT_AREAS: A list of **up to 5** other relevant categories from the list (comma-separated), based on the candidate's secondary skills or experiences.
+- SUMMARY: A concise, factual 2-3 sentence explanation of why the candidate fits (or does not fit) the role and category.
 
-Given this Candidate CV:
-{input}
+Output format (strictly follow this format):
 
-Return only a concrete value score (SCORE: ) (0-100) for this applicant. no more information just the number.
-Answer:
+SCORE: <number from 0 to 100>  
+POTENTIAL_FIT_AREAS: <comma-separated list of up to 5 categories>  
+SUMMARY: <2-3 factual sentences summarizing the candidate's fit>
+
+Do not explain the task or provide any headings.
+
+ANSWER:
 """
