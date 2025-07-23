@@ -1,14 +1,14 @@
 # Resume Analyser
 
-Resume Analyser is a tool that uses Retrieval-Augmented Generation (RAG) to deeply understand candidate profiles. Instead of just matching keywords, it connects skills, experience, and qualifications to provide clear, explainable insights for hiring decisions. Perfect for recruiters, HR tech platforms, and anyone looking to evaluate talent more effectively. This project solve the following situations (assigning each a quantitative compatibility score and a qualitative explanation):
+Resume Analyzer is an intelligent evaluation tool that leverages Retrieval-Augmented Generation (RAG) to assess candidate profiles with context-aware precision. Unlike basic keyword matching, this system understands the skills, experience, and qualifications behind a resume to produce quantitative scores and qualitative explanations, empowering recruiters, HR tech platforms, and hiring teams to make informed decisions (assigning each a quantitative compatibility score and a qualitative explanation):
 
-1. Given a novel job description and a Resume document database, retrieve the top K most relevant candidates, retain their document identifiers.
-2. If the initial candidate set fails to meet predefined fit thresholds, ingest a newly submitted Resume, evaluate it against the job requirements.
-3. For any incoming Resume, query the database of open job postings to identify the single best‐matching and top K most relevant positions, retain the corresponding job-description identifiers.
+1. Candidate Matching: Given a new job description and a resume database, retrieve the top K most relevant candidates (by ID) based on semantic fit.
+2. Cold Resume Evaluation: If no existing candidates meet predefined thresholds, evaluate a newly submitted resume against the job role and return a compatibility score.
+3. Reverse Matching: For any incoming resume, identify the best-matching job opening from a job description database and retrieve the top K matches.
 
 ## Key Features
 
-Langchain: used to wraps Huggingface models and has everything inside it :D. So I can easily use with prompts.
+Langchain: Wraps Hugging Face models and simplifies prompt handling, vector store access, and LLM orchestration.
 
 Retrieval Augmented Generation (RAG): ombines a high-performance vector retriever (e.g., FAISS or ChromaDB) with an LLM backbone (via LangChain’s HuggingFacePipeline). The system first retrieves the most semantically relevant documents (Resume or job descriptions) with their IDs, then feeds them into the LLM to generate grounded compatibility scores and concise, explainable summaries.
 
@@ -22,9 +22,8 @@ Specifically, Added:
 - [X] Simple RAG pipeline implementation
 - [X] Adding Analyzer and Judge LLMs (summary evaluation and score)
 - [X] Task 1: Given a job description find a "good match" Resume in a database
-- [ ] Task 2: Set a score to a new Resume entry vs a job description
-- [ ] Task 3: A new Resume entry with job description database
-- [ ] Adding Metrics
+- [X] Task 2: Set a score to a new Resume entry vs a job description
+- [ ] Task 3: Get system metrics given a database.
 - [ ] Visual Interface
 
 ## Install
@@ -46,6 +45,8 @@ Important note for FAISS (GPU): [issue with numpy](https://github.com/facebookre
 ```bash
 huggingface-cli login
 ```
+
+### Precompute embeddings
 
 To compute embeddings from the database `ahmedheakl/resume-atlas` and `Lakshmi12/Resume_Dataset` or job description dataset, run variation of the following commands:
 

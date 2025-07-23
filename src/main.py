@@ -20,12 +20,7 @@ tested_models = ["deepseek-ai/DeepSeek-R1",
 
 
 if __name__ == "__main__":
-    # Job => CV pool => Bring me X candidates and score them.
-    # If not, Ask for new CVs
-    # New CV => Analyze => score.
-    #
     resume_text_path = "embeddings/resume_classifier/embeddingsBase/chroma/train/Resume"
-
     resume_text_db = resume_classifier.ResumeLoaderChroma(keep_in_memory=False,
                                                           model_name="sentence-transformers/all-mpnet-base-v2",
                                                           )
@@ -46,7 +41,7 @@ if __name__ == "__main__":
 
     # In case, we dont have to write them.
     # Compute them using an LLM to aggregate data to the query.
-    if not "," in requirements:
+    if not ("," in requirements or len(requirements) > 20 or ";" in requirements):
         job_requirements = cv_assistant.get_relevant_requeriments(requirements,
                                                                   llm.analyzer)
     else:
