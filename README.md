@@ -24,8 +24,8 @@ Specifically, Added:
 - [X] Task 1: Given a job description find a "good match" Resume in a database
 - [X] Task 2: Set a score to a new Resume entry vs a job description
 - [ ] Task 3: Get system metrics given a database.
-- [ ] Visual Interface (Gradio)
-- [ ] Extract text from TXT and PDF
+- [X] Visual Interface (Gradio)
+- [X] Extract text from TXT and PDF
 - [ ] Support Memory for parameter changes (e.g. return more CV without computing everything again).
 
 ## Install

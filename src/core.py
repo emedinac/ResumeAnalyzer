@@ -34,10 +34,10 @@ def load_db(path):
     return db
 
 
-def match_cv_job(job_requirements, resume, db, model_name="meta-llama/Llama-3.2-1B-Instruct", aggregate=True, threshold=0.65):
+def match_cv_job(job_requirements, resume, model_name="meta-llama/Llama-3.2-1B-Instruct", aggregate=True, threshold=0.65):
     llm = llms.LLMScorer(model=model_name)
-    cv_assistant = rags.RAGSystem(db=db,
-                                  vectorstore=db.vectors,
+    cv_assistant = rags.RAGSystem(db=None,
+                                  vectorstore=None,
                                   search_type="similarity_score_threshold",
                                   search_kwargs={'score_threshold': threshold,
                                                  "k": 5},
@@ -58,7 +58,7 @@ def match_cv_job(job_requirements, resume, db, model_name="meta-llama/Llama-3.2-
                                                        llm.judge
                                                        )
     # evaluation = cv_assistant.filter_answer(evaluation)
-    final_candidates[id_candidate] = evaluation
+    final_candidates = {"0": evaluation}
     return final_candidates
 
 

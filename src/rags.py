@@ -59,9 +59,11 @@ class RAGSystem:
             self.extraction_template = prompts.extraction_template
 
     def setup(self, db, vectorstore, search_type, search_kwargs):
-        self.set_vectorstore(vectorstore)
-        self.set_retriever(search_type, search_kwargs)
-        self.set_db(db)
+        if vectorstore is not None:
+            self.set_vectorstore(vectorstore)
+            self.set_retriever(search_type, search_kwargs)
+        if db is not None:
+            self.set_db(db)
 
     def set_retriever(self, search_type, search_kwargs):
         self.retriever = self.vectorstore.as_retriever(search_type=search_type,
@@ -160,7 +162,7 @@ class RAGSystem:
         out = self.filter_answer(response)
         if "no" in out["VALID_SCORE"].lower() or \
             "no" in out["VALID_SUMMARY"].lower() or \
-                "no" in out["VALID_FIT_AREAS"].lower():
+                ("no" in out["VALID_FIT_AREAS"].lower() and len(out["VALID_FIT_AREAS"].lower()) < 10):
             return "INCOMPLETE CV ANALYSIS\n"+response
         out["SUMMARY"] = summary
         return out

@@ -19,13 +19,16 @@ model_name = "meta-llama/Llama-3.2-1B-Instruct"
 
 def analyze_resume(resume_file, job_description_file, job_description_str, role, llm_aggregate, number_candidate, threshold):
     global data_path
-    if not job_description_file and not role:
+    if (not job_description_str or not job_description_file) and not role:
         return "Please upload a file or enter a job skills.", \
             "Please upload a file or enter a job skills.", \
             "Please upload a file or enter a job skills.", \
             "Please upload a file or enter a job skills.", \
             "Please upload a file or enter a job skills."
 
+    requirements = f"{job_description_file}. {job_description_str}. {role}"
+    # sample = core.rags.get_sample(resume_text_db, 0)
+    # requirements = sample["sample"]["Category"]
     # Load text from file Support short documents ONLY
     if job_description_file is not None:
         job_description_file = core.load_file(job_description_file.name)
@@ -34,20 +37,22 @@ def analyze_resume(resume_file, job_description_file, job_description_str, role,
 
     # Load text from file
     if resume_file is not None:
-        resume_file = core.load_file(job_description_file.name)
+        resume_file = core.load_file(resume_file.name)
         candidates = core.match_cv_job(requirements,
                                        resume_file,
-                                       resume_text_db,
                                        model_name,
                                        llm_aggregate,
                                        threshold,
                                        )
+        if candidates["0"] == "INVALID CV ANALYSIS":
+            return "Invalid CV Analysis.", \
+                "Invalid CV Analysis.", \
+                "Invalid CV Analysis.", \
+                "Invalid CV Analysis.", \
+                "Invalid CV Analysis."
     else:
         # Call RAG + LLM pipeline
         resume_text_db = core.load_db(data_path)
-        # sample = core.rags.get_sample(resume_text_db, 0)
-        # requirements = sample["sample"]["Category"]
-        requirements = f"{job_description_file}. {job_description_str}. {role}"
         candidates = core.get_candidates_given_job(requirements,
                                                    resume_text_db,
                                                    model_name,
@@ -76,7 +81,11 @@ def analyze_resume(resume_file, job_description_file, job_description_str, role,
         errors += f"{idx+1}. Candidate {cand_idx}:  " + \
             candidate.get("ERRORS_OR_INCONSISTENCIES",
                           "No Errors were found.") + "\n\n"
-        sample = core.rags.get_sample(resume_text_db, int(cand_idx))["sample"]
+        if resume_file is None:
+            sample = core.rags.get_sample(
+                resume_text_db, int(cand_idx))["sample"]
+        else:
+            sample = {'Category': "", 'Resume': resume_file}
         resume += f"{idx+1}. Candidate: {cand_idx} - label from DB -> {sample['Category']}:\n" + \
             sample['Resume'] + "\n\n\n\n"
         if idx+1 == int(number_candidate):
@@ -110,7 +119,7 @@ def main():
                         allow_custom_value=True
                     )
                     threshold_input = gr.Slider(
-                        0, 1, step=0.01, value=0.65, label="Threshold")
+                        0, 1, step=0.01, value=0.65, label="Retriever Threshold")
         with gr.Row():
             submit_btn = gr.Button("Analyze Resume")
 
