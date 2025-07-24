@@ -16,13 +16,14 @@ import numpy as np
 import re
 
 
-def reorder_candidates_based_on_scores(candidates):
-    def get_score(entry):
-        match = re.search(r'RECOMMENDED_SCORE:\s*(\d+)', entry)
-        return int(match.group(1)) if match else 0
-    sorted_candidates = sorted(candidates.items(),
-                               key=lambda item: get_score(item[1]),
-                               reverse=True)
+def reorder_candidates_based_on_scores(candidates: dict) -> dict:
+    def get_score(metric: dict) -> int:
+        return int(metric.get("RECOMMENDED_SCORE", 0))
+    sorted_candidates = sorted(
+        candidates.items(),
+        key=lambda item: get_score(item[1]),
+        reverse=True
+    )
     return dict(sorted_candidates)
 
 
@@ -141,18 +142,38 @@ class RAGSystem:
                                                       "fit_areas": fit_areas,
                                                       })
         response = llm.invoke(prompt)
+        out = self.filter_answer(response)
+        if "no" in out["VALID_SCORE"].lower() or \
+            "no" in out["VALID_SUMMARY"].lower() or \
+                "no" in out["VALID_FIT_AREAS"].lower():
+            return "INCOMPLETE CV ANALYSIS\n"+response
+        out["SUMMARY"] = summary
+        return out
+
+    @staticmethod
+    def filter_answer(response):
         str1 = "- VALID_SCORE:"
         str2 = "- VALID_SUMMARY:"
         str3 = "- VALID_POTENTIAL_FIT_AREAS:"
+        str4 = "- RECOMMENDED_CLASS:"
+        str5 = "- ERRORS_OR_INCONSISTENCIES:"
+        str6 = "- RECOMMENDED_SCORE:"
+
         idx1 = response.find(str1)
         idx2 = response.find(str2)
         idx3 = response.find(str3)
-        idx31 = response[idx3:].find("- ")
+        idx4 = response.find(str4)
+        idx5 = response.find(str5)
+        idx6 = response.find(str6)
         VALID_SCORE = response[idx1+len(str1):idx2].strip()
         VALID_SUMMARY = response[idx2+len(str2):idx3].strip()
-        VALID_FIT_AREAS = response[idx3+len(str3):idx3+idx31].strip()
-        if "no" in VALID_SCORE.lower() or \
-            "no" in VALID_SUMMARY.lower() or \
-                "no" in VALID_FIT_AREAS.lower():
-            return "INCOMPLETE CV ANALYSIS\n"+response
-        return response
+        VALID_FIT_AREAS = response[idx3+len(str3):idx4].strip()
+        RECOMMENDED_CLASS = response[idx4+len(str4):idx5].strip()
+        ERRORS_OR_INCONSISTENCIES = response[idx5+len(str5):idx6].strip()
+        RECOMMENDED_SCORE = response[idx6+len(str6):].strip()
+        return {"VALID_SCORE": VALID_SCORE,
+                "VALID_SUMMARY": VALID_SUMMARY,
+                "VALID_FIT_AREAS": VALID_FIT_AREAS,
+                "RECOMMENDED_CLASS": RECOMMENDED_CLASS,
+                "ERRORS_OR_INCONSISTENCIES": ERRORS_OR_INCONSISTENCIES,
+                "RECOMMENDED_SCORE": RECOMMENDED_SCORE, }

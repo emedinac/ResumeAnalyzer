@@ -20,18 +20,18 @@ Evaluate the following:
 
 1. Is the SCORE appropriate based on the content of the CV and relevance to the target role?
 2. Does the SUMMARY accurately reflect the candidate's experience, and is it clearly supported by the CV?
-3. Are the suggested POTENTIAL_FIT_AREAS logical and supported by evidence in the CV? the possible areas to match are (no others): ACCOUNTANT, ADVOCATE, AGRICULTURE, APPAREL, ARCHITECTURE, ARTS, AUTOMOBILE, AVIATION, BANKING, BLOCKCHAIN, Business Process Outsourcing, BUILDING AND CONSTRUCTION, BUSINESS ANALYST, BUSINESS DEVELOPMENT, CHEF, CIVIL ENGINEER, CONSTRUCTION, CONSULTANT, DATA SCIENCE, DATABASE, DESIGNER, DESIGNING, DEVOPS, DIGITAL MEDIA, DOTNET DEVELOPER, EDUCATION, ELECTRICAL ENGINEERING, ENGINEERING, ETL DEVELOPER, FINANCE, FITNESS, FOOD AND BEVERAGES, HEALTH AND FITNESS, HEALTHCARE, HUMAN RESOURCES, INFORMATION TECHNOLOGY, JAVA DEVELOPER, MANAGEMENT, MECHANICAL ENGINEER, NETWORK SECURITY ENGINEER, OPERATIONS MANAGER, Project Management Office, PUBLIC RELATIONS, PYTHON DEVELOPER, REACT DEVELOPER, SALES, SAP DEVELOPER, SQL DEVELOPER, TEACHER, TESTING, WEB DESIGNING
+3. Are the suggested POTENTIAL_FIT_AREAS logical and supported by evidence in the CV? The possible areas to match are strictly limited to: ACCOUNTANT, ADVOCATE, AGRICULTURE, APPAREL, ARCHITECTURE, ARTS, AUTOMOBILE, AVIATION, BANKING, BLOCKCHAIN, Business Process Outsourcing, BUILDING AND CONSTRUCTION, BUSINESS ANALYST, BUSINESS DEVELOPMENT, CHEF, CIVIL ENGINEER, CONSTRUCTION, CONSULTANT, DATA SCIENCE, DATABASE, DESIGNER, DESIGNING, DEVOPS, DIGITAL MEDIA, DOTNET DEVELOPER, EDUCATION, ELECTRICAL ENGINEERING, ENGINEERING, ETL DEVELOPER, FINANCE, FITNESS, FOOD AND BEVERAGES, HEALTH AND FITNESS, HEALTHCARE, HUMAN RESOURCES, INFORMATION TECHNOLOGY, JAVA DEVELOPER, MANAGEMENT, MECHANICAL ENGINEER, NETWORK SECURITY ENGINEER, OPERATIONS MANAGER, Project Management Office, PUBLIC RELATIONS, PYTHON DEVELOPER, REACT DEVELOPER, SALES, SAP DEVELOPER, SQL DEVELOPER, TEACHER, TESTING, WEB DESIGNING
 
-Provide your evaluation strictly in the following format:
+Return your evaluation in this exact format:
 
 - VALID_SCORE: Yes or No
 - VALID_SUMMARY: Yes or No
 - VALID_POTENTIAL_FIT_AREAS: Yes or No
-- RECOMMENDED_CLASS: <Select the single most relevant category from POTENTIAL_FIT_AREAS that best matches the target role>
-- ERRORS_OR_INCONSISTENCIES: <brief explanation if any issues are found, otherwise "None">
-- RECOMMENDED_SCORE (optional): <Only include if you believe the score should be different, else leave blank>
+- RECOMMENDED_CLASS: <Select the **single most appropriate category** from POTENTIAL_FIT_AREAS that aligns **best with the target job role**>
+- ERRORS_OR_INCONSISTENCIES: <Brief explanation of any issue found, or "None">
+- RECOMMENDED_SCORE (optional): <Only if the score is incorrect>
 
-Do not include any other fields. Do not explain your reasoning beyond what is asked above.
+Do not guess outside the POTENTIAL_FIT_AREAS list. Do not invent categories. Be strict.
 
 ANSWER:
 """
