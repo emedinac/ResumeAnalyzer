@@ -3,20 +3,6 @@ import llms
 import rags
 from langchain_community.document_loaders import PyPDFLoader, TextLoader
 
-tested_models = ["deepseek-ai/DeepSeek-R1",
-                 #  "deepseek-ai/DeepSeek-R1-Distill-Llama-8B",
-                 #  "meta-llama/Meta-Llama-3-8B-Instruct",
-                 "meta-llama/Llama-3.2-1B",
-                 "meta-llama/Llama-3.2-1B-Instruct",
-                 "meta-llama/Llama-3.1-8B",
-                 #  "meta-llama/Llama-3.1-8B-Instruct",
-                 "meta-llama/Llama-3.2-3B-Instruct",
-                 #  "meta-llama/Llama-4-Scout-17B-16E-Instruct",
-                 "databricks/dolly-v2-3b",
-                 #  "tiiuae/falcon-7b",
-                 #  "tiiuae/falcon-7b-Instruct",
-                 ]
-
 
 def load_file(path: str) -> str:
     if path.endswith(".pdf"):
