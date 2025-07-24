@@ -14,7 +14,6 @@ def load_file(path: str) -> str:
     else:
         raise ValueError(
             "Unsupported file format. Only .pdf and .txt are supported.")
-    # Combine all page contents into a single string
     full_text = "\n".join(doc.page_content for doc in documents)
     return full_text
 
