@@ -17,7 +17,7 @@ job_roles = [
 model_name = "meta-llama/Llama-3.2-1B-Instruct"
 
 
-def analyze_resume(resume_file, job_description_file, job_description_str, role, number_candidate):
+def analyze_resume(resume_file, job_description_file, job_description_str, role, llm_aggregate, number_candidate, threshold):
     global data_path
     if not job_description_file and not role:
         return "Please upload a file or enter a job skills.", \
@@ -35,24 +35,31 @@ def analyze_resume(resume_file, job_description_file, job_description_str, role,
     # Load text from file
     if resume_file is not None:
         resume_file = core.load_file(job_description_file.name)
+        candidates = core.match_cv_job(requirements,
+                                       resume_file,
+                                       resume_text_db,
+                                       model_name,
+                                       llm_aggregate,
+                                       threshold,
+                                       )
     else:
-        resume_file = ""
-
-    # Call RAG + LLM pipeline
-    resume_text_db = core.load_db(data_path)
-    # sample = core.rags.get_sample(resume_text_db, 0)
-    # requirements = sample["sample"]["Category"]
-    requirements = f"{job_description_file}\n{job_description_str}\nRole: {role}"
-    candidates = core.get_candidates_given_job(requirements,
-                                               resume_text_db,
-                                               model_name,
-                                               )
-    if len(candidates) == 0:
-        return "No Candiadetes in our DB were found.", \
-            "No Candiadetes in our DB were found.", \
-            "No Candiadetes in our DB were found.", \
-            "No Candiadetes in our DB were found.", \
-            "No Candiadetes in our DB were found."
+        # Call RAG + LLM pipeline
+        resume_text_db = core.load_db(data_path)
+        # sample = core.rags.get_sample(resume_text_db, 0)
+        # requirements = sample["sample"]["Category"]
+        requirements = f"{job_description_file}. {job_description_str}. {role}"
+        candidates = core.get_candidates_given_job(requirements,
+                                                   resume_text_db,
+                                                   model_name,
+                                                   llm_aggregate,
+                                                   threshold,
+                                                   )
+        if len(candidates) == 0:
+            return "No Candiadetes in our DB were found.", \
+                "No Candiadetes in our DB were found.", \
+                "No Candiadetes in our DB were found.", \
+                "No Candiadetes in our DB were found.", \
+                "No Candiadetes in our DB were found."
 
     score = ""
     rclass = ""
@@ -70,7 +77,7 @@ def analyze_resume(resume_file, job_description_file, job_description_str, role,
             candidate.get("ERRORS_OR_INCONSISTENCIES",
                           "No Errors were found.") + "\n\n"
         sample = core.rags.get_sample(resume_text_db, int(cand_idx))["sample"]
-        resume += f"{idx+1}. Candidate: {cand_idx} - label: {sample['Category']}:\n" + \
+        resume += f"{idx+1}. Candidate: {cand_idx} - label from DB -> {sample['Category']}:\n" + \
             sample['Resume'] + "\n\n\n\n"
         if idx+1 == int(number_candidate):
             break
@@ -90,15 +97,20 @@ def main():
                 label="Target Job Skills", placeholder="e.g., software skills, Excel, Python, leadership",
                 lines=7)
             with gr.Column():
-                role_input = gr.Dropdown(
-                    label="Select Target Job Role", choices=job_roles)
-                candidate_input = gr.Dropdown(
-                    label="Select Number of Candidates to Return",
-                    choices=list(range(1, 21)),
-                    value=1,
-                    allow_custom_value=True
-                )
-
+                with gr.Row():
+                    role_input = gr.Dropdown(
+                        label="Select Target Job Role", choices=job_roles)
+                    llm_aggregate_input = gr.Checkbox(
+                        label="Aggregate Data with LLM", value=True)
+                with gr.Row():
+                    candidate_input = gr.Dropdown(
+                        label="Select Number of Candidates to Return",
+                        choices=list(range(1, 21)),
+                        value=1,
+                        allow_custom_value=True
+                    )
+                    threshold_input = gr.Slider(
+                        0, 1, step=0.01, value=0.65, label="Threshold")
         with gr.Row():
             submit_btn = gr.Button("Analyze Resume")
 
@@ -116,7 +128,9 @@ def main():
                     job_description_input,
                     job_description_str_input,
                     role_input,
-                    candidate_input],
+                    llm_aggregate_input,
+                    candidate_input,
+                    threshold_input],
             outputs=[score_output,
                      rclass_output,
                      summary_output,

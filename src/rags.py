@@ -49,7 +49,6 @@ class RAGSystem:
                  system_template=None, query_template=None, evaluation_template=None,
                  extraction_template=None):
         self.setup(db, vectorstore, search_type, search_kwargs)
-        self.qa_chain = None
         if system_template is None:
             self.system_template = prompts.system_template
         if query_template is None:
@@ -88,6 +87,22 @@ class RAGSystem:
         ).to_string()
         job_requirements = llm.invoke(str_prompt) + ", " + query
         return job_requirements
+
+    def evaluate_cv(self, job_description, resume, llm):
+        prompt = ChatPromptTemplate.from_messages([
+            SystemMessagePromptTemplate.from_template(
+                self.system_template),
+            SystemMessagePromptTemplate.from_template(
+                self.query_template
+            ),
+        ])
+        str_prompt = prompt.format_prompt(
+            role=job_description,
+            context=resume
+        ).to_string()
+        evaluation = llm.invoke(str_prompt)
+        candidate = {"resume": resume, "evaluation": evaluation}
+        return candidate
 
     def get_relevant_cvs(self, query, llm, split="train",):
 

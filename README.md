@@ -70,6 +70,8 @@ ACCOUNTANT, ADVOCATE, AGRICULTURE, APPAREL, ARCHITECTURE, ARTS, AUTOMOBILE, AVIA
 
 ### Run main pipeline
 
+Consideration: `Lakshmi12/Resume_Dataset` contains bad annotations.
+
 ```bash
 python src/interface.py
 ```
