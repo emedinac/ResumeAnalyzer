@@ -6,13 +6,17 @@ Resume Analyzer is an intelligent evaluation tool that leverages Retrieval-Augme
 2. Cold Resume Evaluation: If no existing candidates meet predefined thresholds, evaluate a newly submitted resume against the job role and return a compatibility score.
 3. Reverse Matching: For any incoming resume, identify the best-matching job opening from a job description database and retrieve the top K matches.
 
+Task 1
+![Task 1](figures/task1.gif)
+Task 2
+![Task 2](figures/task2.gif)
 ## Key Features
 
 Langchain: Wraps Hugging Face models and simplifies prompt handling, vector store access, and LLM orchestration.
 
 Retrieval Augmented Generation (RAG): ombines a high-performance vector retriever (e.g., FAISS or ChromaDB) with an LLM backbone (via LangChain’s HuggingFacePipeline). The system first retrieves the most semantically relevant documents (Resume or job descriptions) with their IDs, then feeds them into the LLM to generate grounded compatibility scores and concise, explainable summaries.
 
-Databases libraries: FAISS & ChromaDB for comparison in this project. The next project would have: Pinecone, Weaviate, Qdrant, Milvus :) Reference: [(Vector DB comparison)](https://medium.com/tech-ai-made-easy/vector-database-comparison-pinecone-vs-weaviate-vs-qdrant-vs-faiss-vs-milvus-vs-chroma-2025-15bf152f891d). Note that Metadata and other infos in Chroma were not included for simplicity but will be added in the next project.
+Databases libraries: FAISS & ChromaDB for comparison in this project. The next project would have: Pinecone, Weaviate, Qdrant, Milvus :) Reference: [Vector DB comparison](https://medium.com/tech-ai-made-easy/vector-database-comparison-pinecone-vs-weaviate-vs-qdrant-vs-faiss-vs-milvus-vs-chroma-2025-15bf152f891d). Note that Metadata and other infos in FAISS were not included for simplicity but will be added in the next project.
 
 Specifically, Added:
 
@@ -23,10 +27,9 @@ Specifically, Added:
 - [X] Adding Analyzer and Judge LLMs (summary evaluation and score)
 - [X] Task 1: Given a job description find a "good match" Resume in a database
 - [X] Task 2: Set a score to a new Resume entry vs a job description
-- [ ] Task 3: Get system metrics given a database.
 - [X] Visual Interface (Gradio)
 - [X] Extract text from TXT and PDF
-- [ ] Support Memory for parameter changes (e.g. return more CV without computing everything again).
+- [ ] Task 3: Reverse Matching (Collect a Job description database could be challenging and expensive)
 
 ## Install
 
@@ -70,7 +73,7 @@ ACCOUNTANT, ADVOCATE, AGRICULTURE, APPAREL, ARCHITECTURE, ARTS, AUTOMOBILE, AVIA
 
 ### Run main pipeline
 
-Consideration: `Lakshmi12/Resume_Dataset` contains bad annotations.
+Consideration: `Lakshmi12/Resume_Dataset` contains bad annotations and `cnamuangtoun/resume-job-description-fit` contains too subjective analysis and definitions for one-to-one match: `No Fit`, `Potential Fit`, `Good Fit`.
 
 ```bash
 python src/interface.py

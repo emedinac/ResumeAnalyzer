@@ -73,7 +73,7 @@ def analyze_resume(resume_file, job_description_file, job_description_str, role,
     resume = ""
     for idx, (cand_idx, candidate) in enumerate(candidates.items()):
         score += f"{idx+1}. Candidate {cand_idx}:  " + \
-            candidate.get("RECOMMENDED_SCORE", "N/A") + " \n\n"
+            candidate.get("RECOMMENDED_SCORE", "N/A") + "/100 \n\n"
         rclass += f"{idx+1}. Candidate {cand_idx}:  " + \
             candidate.get("RECOMMENDED_CLASS", "N/A") + "\n\n"
         summary += f"{idx+1}. Candidate {cand_idx}:  " + \
