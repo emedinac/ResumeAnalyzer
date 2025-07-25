@@ -28,7 +28,7 @@ Specifically, Added:
 - [X] Task 1: Given a job description find a "good match" Resume in a database
 - [X] Task 2: Set a score to a new Resume entry vs a job description
 - [X] Visual Interface (Gradio)
-- [X] Extract text from TXT and PDF
+- [X] Extract text from TXT and PDF (chunks are not applied)
 - [ ] Task 3: Reverse Matching (Collect a Job description database could be challenging and expensive)
 
 ## Install
